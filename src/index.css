@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Fraunces:opsz,wght@9..144,400..800&family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;850&family=Syne:wght@700;800&family=Ubuntu:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #D35400;
+  --color-primary-light: #E67E22;
+  --color-secondary: #0D0B0A;
+  --color-accent: #E67E22;
+  --color-bg-light: #0D0B0A;
+  --color-bg-dark: #070605;
+  --color-bg-card: #151211;
+  --color-border-card: #2C2522;
+  
+  --font-heading: var(--font-heading, "Syne", sans-serif);
+  --font-body: var(--font-body, "Plus Jakarta Sans", sans-serif);
+  
+  --animate-spin-slow: spin 20s linear infinite;
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+:root {
+  --font-heading: "Syne", sans-serif;
+  --font-body: "Plus Jakarta Sans", sans-serif;
+}
+
+:root.preset-artisanal {
+  --font-heading: "Fraunces", serif;
+  --font-body: "Plus Jakarta Sans", sans-serif;
+}
+
+:root.preset-expressive {
+  --font-heading: "Bricolage Grotesque", sans-serif;
+  --font-body: "Outfit", sans-serif;
+}
+
+:root.preset-steakhouse {
+  --font-heading: "Cormorant Garamond", serif;
+  --font-body: "Plus Jakarta Sans", sans-serif;
+}
+
+:root.preset-ubuntu {
+  --font-heading: "Ubuntu", sans-serif;
+  --font-body: "Ubuntu", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply font-body text-white/90 bg-bg-light antialiased selection:bg-primary selection:text-white;
+  }
+}
+
+@layer components {
+  .container {
+    @apply max-w-[1200px] mx-auto px-6;
+  }
+  .btn {
+    @apply inline-block px-8 py-3 bg-primary text-white font-semibold rounded-full transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg shadow-primary/20 hover:shadow-primary/40;
+  }
+}
