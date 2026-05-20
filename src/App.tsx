@@ -30,6 +30,8 @@ interface CartItem {
   selectedVeggie?: string;
   selectedExtras?: { name: string; price: number }[];
   selectedBeverages?: { name: string; price: number }[];
+}
+
 const CMS_URL = import.meta.env.VITE_CMS_URL || '';
 
 const App: React.FC = () => {
