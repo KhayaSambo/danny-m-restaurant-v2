@@ -30,7 +30,7 @@ interface CartItem {
   selectedVeggie?: string;
   selectedExtras?: { name: string; price: number }[];
   selectedBeverages?: { name: string; price: number }[];
-}
+const CMS_URL = import.meta.env.VITE_CMS_URL || '';
 
 const App: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -119,7 +119,7 @@ const App: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch('/api/menu');
+        const res = await fetch(`${CMS_URL}/api/menu`);
         if (!res.ok) {
           throw new Error('Failed to fetch menu items from CMS database.');
         }
@@ -152,7 +152,7 @@ const App: React.FC = () => {
 
     const fetchOrderStatus = async () => {
       try {
-        const res = await fetch(`/api/orders/${activeOrderId}`);
+        const res = await fetch(`${CMS_URL}/api/orders/${activeOrderId}`);
         if (!res.ok) {
           throw new Error('Failed to retrieve order status.');
         }
@@ -388,7 +388,7 @@ const App: React.FC = () => {
         }))
       };
 
-      const res = await fetch('/api/orders', {
+      const res = await fetch(`${CMS_URL}/api/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
