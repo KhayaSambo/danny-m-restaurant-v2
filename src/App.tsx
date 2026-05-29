@@ -76,9 +76,16 @@ const App: React.FC = () => {
   // Checkout and Cart States
   const [cart, setCart] = useState<Record<string, CartItem>>({});
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [cartStep, setCartStep] = useState<'items' | 'checkout'>('items');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isCartOpen) {
+      setCartStep('items');
+    }
+  }, [isCartOpen]);
 
   // Order Tracking States
   const [activeOrderId, setActiveOrderId] = useState<string | null>(() => {
@@ -146,7 +153,18 @@ const App: React.FC = () => {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [notes, setNotes] = useState('');
 
-
+  // Scroll Lock effect for open modals
+  useEffect(() => {
+    const isModalActive = isCartOpen || !!activeCustomizerItem || isAuthModalOpen;
+    if (isModalActive) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+    return () => {
+      document.body.classList.remove('overflow-hidden');
+    };
+  }, [isCartOpen, activeCustomizerItem, isAuthModalOpen]);
 
   // Fetch Menu from Next.js CMS API
   useEffect(() => {
@@ -460,7 +478,7 @@ const App: React.FC = () => {
               const { error: yocoError } = await supabase.functions.invoke('process-yoco-payment', {
                 body: { token: result.id, amountInCents: totalCartPrice * 100 }
               });
-              
+
               if (yocoError) throw yocoError;
 
               // Dual-sync step 1: Insert into Supabase orders table
@@ -618,10 +636,10 @@ const App: React.FC = () => {
               >
                 <User className="w-5 h-5" />
               </button>
-              
+
               {/* Profile Dropdown using transitions-dev */}
-              <div 
-                className={`absolute top-[120%] right-0 w-56 bg-bg-card border border-white/10 shadow-2xl rounded-2xl p-2 t-dropdown ${isProfileOpen ? 'is-open' : ''} ${isProfileClosing ? 'is-closing' : ''}`} 
+              <div
+                className={`absolute top-[120%] right-0 w-56 bg-bg-card border border-white/10 shadow-2xl rounded-2xl p-2 t-dropdown ${isProfileOpen ? 'is-open' : ''} ${isProfileClosing ? 'is-closing' : ''}`}
                 data-origin="top-right"
               >
                 <div className="px-4 py-3 border-b border-white/10 mb-2">
@@ -634,7 +652,7 @@ const App: React.FC = () => {
                 <button className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 rounded-xl text-sm font-bold transition-colors">
                   <Utensils className="w-4 h-4 text-primary-light" /> Past Orders
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     setUser(null);
                     handleProfileToggle();
@@ -1249,812 +1267,1095 @@ const App: React.FC = () => {
         </div>
       </footer>
 
-
-
-      {/* PREMIUM SLIDE-OUT CART SIDEBAR */}
-      <div className={`fixed inset-y-0 right-0 z-50 w-full sm:w-[460px] bg-bg-card/98 border-l border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl transition-transform duration-500 transform ${isCartOpen ? 'translate-x-0' : 'translate-x-full'} flex flex-col justify-between`}>
-        {/* Header */}
-        <div className="p-6 border-b border-white/5 flex justify-between items-center bg-bg-dark/30">
-          {activeOrderId ? (
-            <div className="flex bg-[#0d0b0a] p-1 rounded-xl border border-white/5 shadow-inner">
-              <button
-                onClick={() => setCartSidebarTab('cart')}
-                className={`py-1.5 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1 ${cartSidebarTab === 'cart'
-                  ? 'bg-primary text-white shadow-md'
-                  : 'text-white/50 hover:text-white'
-                  }`}
-              >
-                <Utensils className="w-3.5 h-3.5" />
-                <span>Your Plate ({Object.keys(cart).length})</span>
-              </button>
-              <button
-                onClick={() => setCartSidebarTab('tracker')}
-                className={`py-1.5 px-4 rounded-lg font-black text-[9px] tracking-widest uppercase transition-all cursor-pointer flex items-center gap-1.5 relative ${cartSidebarTab === 'tracker'
-                  ? 'bg-primary text-white shadow-md'
-                  : 'text-white/50 hover:text-white'
-                  }`}
-              >
-                <Flame className="w-3.5 h-3.5 text-primary-light" />
-                <span>Track Order</span>
-                {activeOrderData && ['Received', 'Preparing', 'Ready'].includes(activeOrderData.status) && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-ping" />
-                )}
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <Utensils className="w-6 h-6 text-primary-light" />
-              <div>
-                <h3 className="font-heading text-lg font-extrabold text-white tracking-tight uppercase">Your Ubuntu Plate</h3>
-                <p className="text-[10px] text-primary-light font-black tracking-widest uppercase mt-0.5">Ready for the Kitchen</p>
+      {/* PREMIUM MODAL CART */}
+      <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/75 backdrop-blur-md transition-opacity duration-300 ${isCartOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+        <div className={`relative bg-bg-card/98 border border-white/10 rounded-[2.5rem] w-full max-w-5xl h-[85vh] md:h-[80vh] flex flex-col justify-between shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl transition-transform duration-500 transform ${isCartOpen ? 'scale-100' : 'scale-95'} overflow-hidden`}>
+          {/* Header */}
+          <div className="p-6 border-b border-white/5 flex justify-between items-center bg-bg-dark/30">
+            {activeOrderId ? (
+              <div className="flex bg-[#0d0b0a] p-1 rounded-xl border border-white/5 shadow-inner">
+                <button
+                  onClick={() => setCartSidebarTab('cart')}
+                  className={`py-1.5 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1 ${cartSidebarTab === 'cart'
+                    ? 'bg-primary text-white shadow-md'
+                    : 'text-white/50 hover:text-white'
+                    }`}
+                >
+                  <Utensils className="w-3.5 h-3.5" />
+                  <span>Your Plate ({Object.keys(cart).length})</span>
+                </button>
+                <button
+                  onClick={() => setCartSidebarTab('tracker')}
+                  className={`py-1.5 px-4 rounded-lg font-black text-[9px] tracking-widest uppercase transition-all cursor-pointer flex items-center gap-1.5 relative ${cartSidebarTab === 'tracker'
+                    ? 'bg-primary text-white shadow-md'
+                    : 'text-white/50 hover:text-white'
+                    }`}
+                >
+                  <Flame className="w-3.5 h-3.5 text-primary-light" />
+                  <span>Track Order</span>
+                  {activeOrderData && ['Received', 'Preparing', 'Ready'].includes(activeOrderData.status) && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-ping" />
+                  )}
+                </button>
               </div>
-            </div>
-          )}
-          <button
-            onClick={() => setIsCartOpen(false)}
-            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label="Close cart"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Scrollable Cart Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {activeOrderId && cartSidebarTab === 'tracker' ? (
-            /* UBUNTU HEARTH PROGRESS TRACKER */
-            <div className="space-y-6 py-4 animate-fade-in">
-              {/* Active Order Card */}
-              <div className="bg-[#151211] border border-white/5 rounded-2xl p-5 text-center space-y-3 relative overflow-hidden shadow-inner">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(217,93,46,0.08)_0%,transparent_100%)] pointer-events-none animate-pulse-slow" />
-                <span className="text-[10px] text-white/40 uppercase tracking-widest block font-black">Ubuntu Active Order</span>
-                <h4 className="font-mono text-sm font-bold text-primary-light uppercase tracking-wider">#{activeOrderId.substring(activeOrderId.length - 8)}</h4>
-
-                {activeOrderData ? (
-                  <div className="space-y-2">
-                    <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase bg-primary/20 border border-primary/30 text-white shadow-lg shadow-primary/10">
-                      <span className="relative flex h-2 w-2">
-                        {['Received', 'Preparing', 'Ready'].includes(activeOrderData.status) && (
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                        )}
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                      </span>
-                      {activeOrderData.status}
-                    </div>
-                    {activeOrderData.type && (
-                      <span className="text-[9px] uppercase tracking-wider text-white/40 font-bold flex items-center justify-center gap-1.5 mt-1">
-                        Service: {activeOrderData.type === 'Delivery' ? <Bike className="w-3.5 h-3.5 text-primary-light inline" /> : <Car className="w-3.5 h-3.5 text-primary-light inline" />} {activeOrderData.type}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase bg-white/5 border border-white/10 text-white/50">
-                    <div className="w-3.5 h-3.5 border-2 border-white/35 border-t-transparent rounded-full animate-spin" />
-                    Locating Hearth...
-                  </div>
-                )}
-              </div>
-
-              {activeOrderData && activeOrderData.status === 'Cancelled' ? (
-                /* CANCELLED STATE WRAPPER */
-                <div className="bg-red-500/10 border border-red-500/20 rounded-3xl p-6 text-center space-y-4 shadow-lg shadow-red-950/20">
-                  <div className="w-16 h-16 rounded-full bg-red-500/20 border border-red-500 flex items-center justify-center text-3xl mx-auto shadow-inner">
-                    <AlertTriangle className="w-8 h-8 text-red-500" />
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="font-heading text-lg font-black text-red-400 uppercase tracking-tight">Order Cancelled</h4>
-                    <p className="text-white/60 text-xs leading-relaxed max-w-xs mx-auto">
-                      We're extremely sorry, but your order was cancelled by the kitchen staff. Please check your contact number or get in touch with us at the Ubuntu counter.
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleDismissTracking}
-                    className="w-full py-3 bg-red-500/20 hover:bg-red-500/35 border border-red-500/35 hover:border-red-500 text-white text-xs font-black tracking-widest uppercase rounded-full transition-all cursor-pointer shadow-md shadow-red-550/10"
-                  >
-                    Dismiss & Restart Cart
-                  </button>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Utensils className="w-6 h-6 text-primary-light" />
+                <div>
+                  <h3 className="font-heading text-lg font-extrabold text-white tracking-tight uppercase">Your Ubuntu Plate</h3>
+                  <p className="text-[10px] text-primary-light font-black tracking-widest uppercase mt-0.5">Ready for the Kitchen</p>
                 </div>
-              ) : (
-                /* ACTIVE VERTICAL STEPPER */
-                <div className="space-y-6 bg-bg-dark/45 border border-white/5 rounded-3xl p-6 shadow-inner relative overflow-hidden">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(217,93,46,0.03)_0%,transparent_70%)] pointer-events-none" />
+              </div>
+            )}
+            <button
+              onClick={() => setIsCartOpen(false)}
+              className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label="Close cart"
+            >
+              ✕
+            </button>
+          </div>
 
-                  {/* Step Item Builder */}
-                  {(() => {
-                    const currentStatus = activeOrderData?.status || 'Received';
+          {/* Scrollable Cart Content */}
+          <div className="flex-1 overflow-hidden p-6">
+            {activeOrderId && cartSidebarTab === 'tracker' ? (
+              /* UBUNTU HEARTH PROGRESS TRACKER */
+              <div className="h-full overflow-y-auto space-y-6 py-4 animate-fade-in max-w-lg mx-auto">
+                {/* Active Order Card */}
+                <div className="bg-[#151211] border border-white/5 rounded-2xl p-5 text-center space-y-3 relative overflow-hidden shadow-inner">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(217,93,46,0.08)_0%,transparent_100%)] pointer-events-none animate-pulse-slow" />
+                  <span className="text-[10px] text-white/40 uppercase tracking-widest block font-black">Ubuntu Active Order</span>
+                  <h4 className="font-mono text-sm font-bold text-primary-light uppercase tracking-wider">#{activeOrderId.substring(activeOrderId.length - 8)}</h4>
 
-                    const getStepDetails = (step: number) => {
-                      const isDelivery = activeOrderData?.type === 'Delivery';
-                      switch (step) {
-                        case 1:
-                          return {
-                            title: "Hearth Received",
-                            tag: "Received",
-                            desc: "We've got your order! Our kitchen is validating prep slots at the Pretoria Ubuntu Hearth.",
-                            icon: Inbox
-                          };
-                        case 2:
-                          return {
-                            title: "Simmering Prep",
-                            tag: "Preparing",
-                            desc: "The potjie is simmering! Our chefs are preparing your traditional plate with absolute care.",
-                            icon: ChefHat
-                          };
-                        case 3:
-                          return {
-                            title: isDelivery ? "On The Road" : "Piping Hot & Ready",
-                            tag: "Ready",
-                            desc: isDelivery
-                              ? "Our delivery rider has your traditional meal packed warm and is en route to your address."
-                              : "Ready for collection! Head over to the Ubuntu Hearth counter to grab your piping-hot plate.",
-                            icon: isDelivery ? Bike : Flame
-                          };
-                        case 4:
-                          return {
-                            title: "Feast of Ubuntu",
-                            tag: "Completed",
-                            desc: "Feast complete! We hope you enjoyed the authentic taste of Pretoria. 'I am because we are.'",
-                            icon: Utensils
-                          };
-                        default:
-                          return { title: "", tag: "", desc: "", icon: null };
-                      }
-                    };
-
-                    const getStepState = (stepTag: string) => {
-                      const statusList = ['Received', 'Preparing', 'Ready', 'Completed'];
-                      const currentIdx = statusList.indexOf(currentStatus);
-                      const stepIdx = statusList.indexOf(stepTag);
-
-                      if (currentIdx > stepIdx) return 'completed';
-                      if (currentIdx === stepIdx) return 'active';
-                      return 'pending';
-                    };
-
-                    return [1, 2, 3, 4].map((stepNum) => {
-                      const details = getStepDetails(stepNum);
-                      const state = getStepState(details.tag);
-
-                      return (
-                        <div key={stepNum} className="flex gap-4 relative group">
-                          {/* Left Line & Indicator column */}
-                          <div className="flex flex-col items-center flex-shrink-0 relative">
-                            {/* Vertical Line linking to next step */}
-                            {stepNum < 4 && (
-                              <div className={`w-0.5 absolute top-10 bottom-[-24px] z-0 transition-colors duration-500 ${state === 'completed' ? 'bg-primary' : 'bg-white/10 border-dashed border-l border-white/20'
-                                }`} />
-                            )}
-
-                            {/* Circle Indicator */}
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold z-10 transition-all duration-500 border ${state === 'completed'
-                              ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20'
-                              : state === 'active'
-                                ? 'bg-[#1c1513] border-primary text-white shadow-[0_0_20px_rgba(217,93,46,0.4)] animate-pulse'
-                                : 'bg-[#151211] border-white/5 text-white/30'
-                              }`}>
-                              {state === 'completed' ? (
-                                <Check className="w-5 h-5" />
-                              ) : (
-                                (() => {
-                                  const StepIcon = details.icon;
-                                  return StepIcon ? <StepIcon className="w-5 h-5" /> : null;
-                                })()
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Right text contents */}
-                          <div className="space-y-1 pb-4 flex-1">
-                            <h5 className={`font-heading text-xs font-black tracking-widest uppercase transition-colors duration-500 ${state === 'active' ? 'text-primary-light font-extrabold' : state === 'completed' ? 'text-white' : 'text-white/30'
-                              }`}>
-                              {details.title}
-                            </h5>
-                            <p className={`text-[10px] leading-relaxed transition-colors duration-500 ${state === 'active' ? 'text-white/80' : state === 'completed' ? 'text-white/50' : 'text-white/20'
-                              }`}>
-                              {details.desc}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-
-                  {/* Complete Dismiss / Clear Box */}
-                  {activeOrderData?.status === 'Completed' && (
-                    <div className="pt-4 border-t border-white/5 text-center space-y-3 animate-bounce-slow">
-                      <p className="text-[10px] text-primary-light font-bold uppercase tracking-widest flex items-center justify-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-primary-light" /> Traditional Feast Delivered!
-                      </p>
-                      <button
-                        onClick={handleDismissTracking}
-                        className="w-full py-3.5 bg-primary hover:bg-primary-light text-white font-extrabold rounded-full text-[10px] tracking-widest uppercase shadow-md shadow-primary/20 transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                      >
-                        <span>Dismiss Tracker & Place New Order</span> <Flame className="w-3.5 h-3.5" />
-                      </button>
+                  {activeOrderData ? (
+                    <div className="space-y-2">
+                      <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase bg-primary/20 border border-primary/30 text-white shadow-lg shadow-primary/10">
+                        <span className="relative flex h-2 w-2">
+                          {['Received', 'Preparing', 'Ready'].includes(activeOrderData.status) && (
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                          )}
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                        </span>
+                        {activeOrderData.status}
+                      </div>
+                      {activeOrderData.type && (
+                        <span className="text-[9px] uppercase tracking-wider text-white/40 font-bold flex items-center justify-center gap-1.5 mt-1">
+                          Service: {activeOrderData.type === 'Delivery' ? <Bike className="w-3.5 h-3.5 text-primary-light inline" /> : <Car className="w-3.5 h-3.5 text-primary-light inline" />} {activeOrderData.type}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase bg-white/5 border border-white/10 text-white/50">
+                      <div className="w-3.5 h-3.5 border-2 border-white/35 border-t-transparent rounded-full animate-spin" />
+                      Locating Hearth...
                     </div>
                   )}
                 </div>
-              )}
 
-              {/* Back button */}
-              {activeOrderData?.status !== 'Completed' && activeOrderData?.status !== 'Cancelled' && (
+                {activeOrderData && activeOrderData.status === 'Cancelled' ? (
+                  /* CANCELLED STATE WRAPPER */
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-3xl p-6 text-center space-y-4 shadow-lg shadow-red-950/20">
+                    <div className="w-16 h-16 rounded-full bg-red-500/20 border border-red-500 flex items-center justify-center text-3xl mx-auto shadow-inner">
+                      <AlertTriangle className="w-8 h-8 text-red-500" />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="font-heading text-lg font-black text-red-400 uppercase tracking-tight">Order Cancelled</h4>
+                      <p className="text-white/60 text-xs leading-relaxed max-w-xs mx-auto">
+                        We're extremely sorry, but your order was cancelled by the kitchen staff. Please check your contact number or get in touch with us at the Ubuntu counter.
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleDismissTracking}
+                      className="w-full py-3 bg-red-500/20 hover:bg-red-500/35 border border-red-500/35 hover:border-red-500 text-white text-xs font-black tracking-widest uppercase rounded-full transition-all cursor-pointer shadow-md shadow-red-550/10"
+                    >
+                      Dismiss & Restart Cart
+                    </button>
+                  </div>
+                ) : (
+                  /* ACTIVE VERTICAL STEPPER */
+                  <div className="space-y-6 bg-bg-dark/45 border border-white/5 rounded-3xl p-6 shadow-inner relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(217,93,46,0.03)_0%,transparent_70%)] pointer-events-none" />
+
+                    {/* Step Item Builder */}
+                    {(() => {
+                      const currentStatus = activeOrderData?.status || 'Received';
+
+                      const getStepDetails = (step: number) => {
+                        const isDelivery = activeOrderData?.type === 'Delivery';
+                        switch (step) {
+                          case 1:
+                            return {
+                              title: "Hearth Received",
+                              tag: "Received",
+                              desc: "We've got your order! Our kitchen is validating prep slots at the Pretoria Ubuntu Hearth.",
+                              icon: Inbox
+                            };
+                          case 2:
+                            return {
+                              title: "Simmering Prep",
+                              tag: "Preparing",
+                              desc: "The potjie is simmering! Our chefs are preparing your traditional plate with absolute care.",
+                              icon: ChefHat
+                            };
+                          case 3:
+                            return {
+                              title: isDelivery ? "On The Road" : "Piping Hot & Ready",
+                              tag: "Ready",
+                              desc: isDelivery
+                                ? "Our delivery rider has your traditional meal packed warm and is en route to your address."
+                                : "Ready for collection! Head over to the Ubuntu Hearth counter to grab your piping-hot plate.",
+                              icon: isDelivery ? Bike : Flame
+                            };
+                          case 4:
+                            return {
+                              title: "Feast of Ubuntu",
+                              tag: "Completed",
+                              desc: "Feast complete! We hope you enjoyed the authentic taste of Pretoria. 'I am because we are.'",
+                              icon: Utensils
+                            };
+                          default:
+                            return { title: "", tag: "", desc: "", icon: null };
+                        }
+                      };
+
+                      const getStepState = (stepTag: string) => {
+                        const statusList = ['Received', 'Preparing', 'Ready', 'Completed'];
+                        const currentIdx = statusList.indexOf(currentStatus);
+                        const stepIdx = statusList.indexOf(stepTag);
+
+                        if (currentIdx > stepIdx) return 'completed';
+                        if (currentIdx === stepIdx) return 'active';
+                        return 'pending';
+                      };
+
+                      return [1, 2, 3, 4].map((stepNum) => {
+                        const details = getStepDetails(stepNum);
+                        const state = getStepState(details.tag);
+
+                        return (
+                          <div key={stepNum} className="flex gap-4 relative group">
+                            {/* Left Line & Indicator column */}
+                            <div className="flex flex-col items-center flex-shrink-0 relative">
+                              {/* Vertical Line linking to next step */}
+                              {stepNum < 4 && (
+                                <div className={`w-0.5 absolute top-10 bottom-[-24px] z-0 transition-colors duration-500 ${state === 'completed' ? 'bg-primary' : 'bg-white/10 border-dashed border-l border-white/20'
+                                  }`} />
+                              )}
+
+                              {/* Circle Indicator */}
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold z-10 transition-all duration-500 border ${state === 'completed'
+                                ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20'
+                                : state === 'active'
+                                  ? 'bg-[#1c1513] border-primary text-white shadow-[0_0_20px_rgba(217,93,46,0.4)] animate-pulse'
+                                  : 'bg-[#151211] border-white/5 text-white/30'
+                                }`}>
+                                {state === 'completed' ? (
+                                  <Check className="w-5 h-5" />
+                                ) : (
+                                  (() => {
+                                    const StepIcon = details.icon;
+                                    return StepIcon ? <StepIcon className="w-5 h-5" /> : null;
+                                  })()
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Right text contents */}
+                            <div className="space-y-1 pb-4 flex-1">
+                              <h5 className={`font-heading text-xs font-black tracking-widest uppercase transition-colors duration-500 ${state === 'active' ? 'text-primary-light font-extrabold' : state === 'completed' ? 'text-white' : 'text-white/30'
+                                }`}>
+                                {details.title}
+                              </h5>
+                              <p className={`text-[10px] leading-relaxed transition-colors duration-500 ${state === 'active' ? 'text-white/80' : state === 'completed' ? 'text-white/50' : 'text-white/20'
+                                }`}>
+                                {details.desc}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+
+                    {/* Complete Dismiss / Clear Box */}
+                    {activeOrderData?.status === 'Completed' && (
+                      <div className="pt-4 border-t border-white/5 text-center space-y-3 animate-bounce-slow">
+                        <p className="text-[10px] text-primary-light font-bold uppercase tracking-widest flex items-center justify-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-primary-light" /> Traditional Feast Delivered!
+                        </p>
+                        <button
+                          onClick={handleDismissTracking}
+                          className="w-full py-3.5 bg-primary hover:bg-primary-light text-white font-extrabold rounded-full text-[10px] tracking-widest uppercase shadow-md shadow-primary/20 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <span>Dismiss Tracker & Place New Order</span> <Flame className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Back button */}
+                {activeOrderData?.status !== 'Completed' && activeOrderData?.status !== 'Cancelled' && (
+                  <button
+                    onClick={() => setIsCartOpen(false)}
+                    className="w-full py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-full text-[10px] tracking-widest uppercase transition-all cursor-pointer text-center flex items-center justify-center gap-2"
+                  >
+                    <Clock className="w-3.5 h-3.5 text-white/60" />
+                    <span>Keep Tracking in Background</span>
+                  </button>
+                )}
+              </div>
+            ) : orderSuccess ? (
+              /* KEEP RETAINED IF ORDER SUCCESS BUT NO TRACKING ID FOR ROBUSTNESS */
+              <div className="flex flex-col items-center justify-center h-full text-center space-y-6 py-12 animate-pulse-slow max-w-md mx-auto">
+                <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center shadow-lg shadow-primary/30 mx-auto">
+                  <Check className="w-10 h-10 text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <span className="text-primary-light font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-1"><Sparkles className="w-3.5 h-3.5 text-primary-light" /> Order Received!</span>
+                  <h4 className="font-heading text-2xl font-black text-white uppercase tracking-tight">Cooked with Love</h4>
+                  <div className="w-12 h-0.5 bg-primary mx-auto rounded-full mt-2" />
+                </div>
+                <p className="text-white/70 text-sm leading-relaxed max-w-sm mx-auto">
+                  Thank you for ordering! The kitchen team has received your order in the CMS and is preparing your meal with absolute love, hygiene, and care.
+                </p>
+                <p className="text-primary-light font-bold text-xs">
+                  Ubuntu: "I am because we are."
+                </p>
+                <button
+                  onClick={() => {
+                    setOrderSuccess(false);
+                    setIsCartOpen(false);
+                  }}
+                  className="mt-4 px-8 py-3 bg-primary hover:bg-primary-light text-white font-bold rounded-full text-xs tracking-widest uppercase transition-all cursor-pointer"
+                >
+                  Close & Browse Menu
+                </button>
+              </div>
+            ) : Object.keys(cart).length === 0 ? (
+              /* EMPTY CART STATE */
+              <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-20 text-white/40">
+                <ShoppingBag className="w-16 h-16 text-white/20 mx-auto" />
+                <h4 className="font-heading text-lg font-bold text-white uppercase tracking-tight">Your Plate is Empty</h4>
+                <p className="text-xs max-w-xs mx-auto">
+                  Add some of our slow-cooked Pretoria traditional meals to customize your perfect plate.
+                </p>
                 <button
                   onClick={() => setIsCartOpen(false)}
-                  className="w-full py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-full text-[10px] tracking-widest uppercase transition-all cursor-pointer text-center flex items-center justify-center gap-2"
+                  className="mt-2 px-6 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-full text-[10px] tracking-widest uppercase transition-all cursor-pointer"
                 >
-                  <Clock className="w-3.5 h-3.5 text-white/60" />
-                  <span>Keep Tracking in Background</span>
+                  Start Adding meals
                 </button>
-              )}
-            </div>
-          ) : orderSuccess ? (
-            /* KEEP RETAINED IF ORDER SUCCESS BUT NO TRACKING ID FOR ROBUSTNESS */
-            <div className="flex flex-col items-center justify-center h-full text-center space-y-6 py-12 animate-pulse-slow">
-              <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center shadow-lg shadow-primary/30 mx-auto">
-                <Check className="w-10 h-10 text-primary" />
               </div>
-              <div className="space-y-2">
-                <span className="text-primary-light font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-1"><Sparkles className="w-3.5 h-3.5 text-primary-light" /> Order Received!</span>
-                <h4 className="font-heading text-2xl font-black text-white uppercase tracking-tight">Cooked with Love</h4>
-                <div className="w-12 h-0.5 bg-primary mx-auto rounded-full mt-2" />
-              </div>
-              <p className="text-white/70 text-sm leading-relaxed max-w-sm mx-auto">
-                Thank you for ordering! The kitchen team has received your order in the CMS and is preparing your meal with absolute love, hygiene, and care.
-              </p>
-              <p className="text-primary-light font-bold text-xs">
-                Ubuntu: "I am because we are."
-              </p>
-              <button
-                onClick={() => {
-                  setOrderSuccess(false);
-                  setIsCartOpen(false);
-                }}
-                className="mt-4 px-8 py-3 bg-primary hover:bg-primary-light text-white font-bold rounded-full text-xs tracking-widest uppercase transition-all cursor-pointer"
-              >
-                Close & Browse Menu
-              </button>
-            </div>
-          ) : Object.keys(cart).length === 0 ? (
-            /* EMPTY CART STATE */
-            <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-20 text-white/40">
-              <ShoppingBag className="w-16 h-16 text-white/20 mx-auto" />
-              <h4 className="font-heading text-lg font-bold text-white uppercase tracking-tight">Your Plate is Empty</h4>
-              <p className="text-xs max-w-xs mx-auto">
-                Add some of our slow-cooked Pretoria traditional meals to customize your perfect plate.
-              </p>
-              <button
-                onClick={() => setIsCartOpen(false)}
-                className="mt-2 px-6 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-full text-[10px] tracking-widest uppercase transition-all cursor-pointer"
-              >
-                Start Adding meals
-              </button>
-            </div>
-          ) : (
-            /* ACTIVE CART ITEMS LIST */
-            <div className="space-y-4">
-              <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block border-b border-white/5 pb-2">Selected Items</span>
-              {Object.values(cart).map((cartItem) => {
-                const item = cartItem.item;
-                const starches = item.primaryStarchOptions ? JSON.parse(item.primaryStarchOptions) : [];
-                const salads = item.complementarySaladOptions ? JSON.parse(item.complementarySaladOptions) : [];
-                const veggies = item.sideVeggieOptions ? JSON.parse(item.sideVeggieOptions) : [];
+            ) : (
+              /* ACTIVE CART & CHECKOUT REDESIGN */
+              <div className="h-full">
+                {/* 1. DESKTOP VIEW: TWO COLUMNS */}
+                <div className="hidden md:grid grid-cols-2 gap-8 h-full">
+                  {/* Left Column: Selected Items (Scrollable) */}
+                  <div className="flex flex-col h-full overflow-hidden pr-4 border-r border-white/5">
+                    <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                      <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block border-b border-white/5 pb-2">Selected Items</span>
+                      {Object.values(cart).map((cartItem) => {
+                        const item = cartItem.item;
+                        const starches = item.primaryStarchOptions ? JSON.parse(item.primaryStarchOptions) : [];
+                        const salads = item.complementarySaladOptions ? JSON.parse(item.complementarySaladOptions) : [];
+                        const veggies = item.sideVeggieOptions ? JSON.parse(item.sideVeggieOptions) : [];
 
-                return (
-                  <div key={item.id} className="bg-bg-dark/40 border border-white/5 rounded-2xl p-4 space-y-3 shadow-inner">
-                    <div className="flex justify-between items-start gap-4">
-                      {/* Avatar */}
-                      {item.image && item.image !== 'null' && item.image !== '' && (
-                        <div className="w-16 h-16 rounded-full overflow-hidden border border-white/10 bg-bg-dark flex-shrink-0">
-                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                        return (
+                          <div key={item.id} className="bg-bg-dark/40 border border-white/5 rounded-2xl p-4 space-y-3 shadow-inner">
+                            <div className="flex justify-between items-start gap-4">
+                              {/* Avatar */}
+                              {item.image && item.image !== 'null' && item.image !== '' && (
+                                <div className="w-16 h-16 rounded-full overflow-hidden border border-white/10 bg-bg-dark flex-shrink-0">
+                                  <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                </div>
+                              )}
+
+                              {/* Name & price */}
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-heading font-extrabold text-sm text-white uppercase truncate tracking-tight">{item.name}</h4>
+                                <span className="text-xs text-primary-light font-black block mt-0.5">R {getItemPrice(cartItem).toFixed(2)}</span>
+                              </div>
+
+                              {/* Remove Button */}
+                              <button
+                                onClick={() => handleRemoveItem(item.id)}
+                                className="text-white/30 hover:text-red-500 transition-colors text-sm cursor-pointer"
+                                aria-label="Remove item"
+                              >
+                                ✕
+                              </button>
+                            </div>
+
+                            {/* DYNAMIC OPTION SELECTORS (STARCH / SALAD / VEGGIE) FROM CMS */}
+                            {(starches.length > 0 || salads.length > 0 || veggies.length > 0) && (
+                              <div className="pt-2 border-t border-white/5 grid grid-cols-2 gap-2">
+                                {starches.length > 0 && (
+                                  <div className="space-y-1">
+                                    <label className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Choice of Starch</label>
+                                    <select
+                                      value={cartItem.selectedStarch || ''}
+                                      onChange={(e) => handleUpdateOptions(item.id, 'selectedStarch', e.target.value)}
+                                      className="w-full bg-bg-dark border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/80 focus:border-primary focus:outline-none"
+                                    >
+                                      {starches.map((s: string) => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                  </div>
+                                )}
+
+                                {salads.length > 0 && (
+                                  <div className="space-y-1">
+                                    <label className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Choice of Salad</label>
+                                    <select
+                                      value={cartItem.selectedSalad || ''}
+                                      onChange={(e) => handleUpdateOptions(item.id, 'selectedSalad', e.target.value)}
+                                      className="w-full bg-bg-dark border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/80 focus:border-primary focus:outline-none"
+                                    >
+                                      {salads.map((s: string) => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                  </div>
+                                )}
+
+                                {veggies.length > 0 && (
+                                  <div className="space-y-1 col-span-2">
+                                    <label className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Choice of Side Veggie</label>
+                                    <select
+                                      value={cartItem.selectedVeggie || ''}
+                                      onChange={(e) => handleUpdateOptions(item.id, 'selectedVeggie', e.target.value)}
+                                      className="w-full bg-bg-dark border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/80 focus:border-primary focus:outline-none"
+                                    >
+                                      {veggies.map((s: string) => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Selected Extras & Beverages */}
+                            {((cartItem.selectedExtras && cartItem.selectedExtras.length > 0) ||
+                              (cartItem.selectedBeverages && cartItem.selectedBeverages.length > 0)) && (
+                                <div className="pt-2 border-t border-white/5 space-y-1">
+                                  {cartItem.selectedExtras && cartItem.selectedExtras.length > 0 && (
+                                    <div className="text-[10px] text-white/70">
+                                      <span className="text-white/40 font-bold uppercase tracking-wider block">Extras Added:</span>
+                                      <div className="flex flex-wrap gap-1 mt-0.5">
+                                        {cartItem.selectedExtras.map((ex, idx) => (
+                                          <span key={idx} className="bg-primary/20 text-primary-light border border-primary/20 rounded-full px-2 py-0.5 text-[9px] font-medium">
+                                            {ex.name} (+R{ex.price.toFixed(2)})
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {cartItem.selectedBeverages && cartItem.selectedBeverages.length > 0 && (
+                                    <div className="text-[10px] text-white/70">
+                                      <span className="text-white/40 font-bold uppercase tracking-wider block">Beverages Added:</span>
+                                      <div className="flex flex-wrap gap-1 mt-0.5">
+                                        {cartItem.selectedBeverages.map((bev, idx) => (
+                                          <span key={idx} className="bg-primary/20 text-primary-light border border-primary/20 rounded-full px-2 py-0.5 text-[9px] font-medium">
+                                            {bev.name} (+R{bev.price.toFixed(2)})
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                            {/* Quantity selectors */}
+                            <div className="flex justify-between items-center pt-2">
+                              <span className="text-[10px] uppercase text-white/30 tracking-widest font-black">Quantity</span>
+                              <div className="flex items-center justify-between w-24 bg-bg-dark rounded-full p-0.5 border border-white/5">
+                                <button
+                                  onClick={() => handleDecrement(item)}
+                                  className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/5 cursor-pointer"
+                                >
+                                  −
+                                </button>
+                                <span className="text-xs font-black text-white">{cartItem.quantity}</span>
+                                <button
+                                  onClick={() => handleIncrement(item)}
+                                  className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/5 cursor-pointer"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Checkout Form + Totals (Scrollable) */}
+                  <div className="flex flex-col h-full overflow-hidden">
+                    <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+                      {/* Calculation Totals */}
+                      <div className="space-y-2 text-sm border-b border-white/5 pb-4">
+                        <div className="flex justify-between text-white/50 text-xs">
+                          <span>Subtotal</span>
+                          <span>R {subtotal.toFixed(2)}</span>
                         </div>
-                      )}
-
-                      {/* Name & price */}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-heading font-extrabold text-sm text-white uppercase truncate tracking-tight">{item.name}</h4>
-                        <span className="text-xs text-primary-light font-black block mt-0.5">R {getItemPrice(cartItem).toFixed(2)}</span>
+                        <div className="flex justify-between text-white/50 text-xs">
+                          <span>VAT (15% South African Standard)</span>
+                          <span>R {calculatedVat.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between font-extrabold text-white text-base pt-1">
+                          <span>Grand Total</span>
+                          <span className="text-primary-light">R {totalCartPrice.toFixed(2)}</span>
+                        </div>
                       </div>
 
-                      {/* Remove Button */}
+                      {/* Checkout submission form */}
+                      <form onSubmit={handleCheckoutSubmit} className="space-y-4">
+                        <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block">Checkout Details</span>
+
+                        {orderError && (
+                          <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl text-center flex items-center justify-center gap-1.5">
+                            <AlertTriangle className="w-4 h-4 text-red-400" /> <span>{orderError}</span>
+                          </div>
+                        )}
+
+                        <div className="space-y-3">
+                          <input
+                            type="text"
+                            required
+                            placeholder="Your Name (Required)*"
+                            value={customerName}
+                            onChange={(e) => setCustomerName(e.target.value)}
+                            className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
+                          />
+
+                          <input
+                            type="tel"
+                            placeholder="Phone Number (Highly Recommended)"
+                            value={customerPhone}
+                            onChange={(e) => setCustomerPhone(e.target.value)}
+                            className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
+                          />
+
+                          <input
+                            type="email"
+                            placeholder="Email Address (For order updates)"
+                            value={customerEmail}
+                            onChange={(e) => setCustomerEmail(e.target.value)}
+                            className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
+                          />
+
+                          {/* Service Mode Toggles */}
+                          <div className="grid grid-cols-2 gap-2 bg-[#0d0b0a] p-1 rounded-xl border border-white/5 shadow-inner">
+                            <button
+                              type="button"
+                              onClick={() => setServiceMode('Pickup')}
+                              className={`py-2 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${serviceMode === 'Pickup'
+                                ? 'bg-primary text-white shadow-md'
+                                : 'text-white/50 hover:text-white'
+                                }`}
+                            >
+                              <Car className="w-3.5 h-3.5" />
+                              <span>Pickup</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setServiceMode('Delivery')}
+                              className={`py-2 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${serviceMode === 'Delivery'
+                                ? 'bg-primary text-white shadow-md'
+                                : 'text-white/50 hover:text-white'
+                                }`}
+                            >
+                              <Bike className="w-3.5 h-3.5" />
+                              <span>Delivery</span>
+                            </button>
+                          </div>
+
+                          {/* Delivery Address Input */}
+                          {serviceMode === 'Delivery' && (
+                            <input
+                              type="text"
+                              required
+                              placeholder="Delivery Address (Required)*"
+                              value={deliveryAddress}
+                              onChange={(e) => setDeliveryAddress(e.target.value)}
+                              className="w-full bg-[#151211] border border-white/5 hover:border-primary focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white animate-pulse-slow"
+                            />
+                          )}
+
+                          <input
+                            type="text"
+                            placeholder="Special instructions (e.g. Extra Gravy)"
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
+                          />
+                        </div>
+
+                        {/* Glowing Submit Button */}
+                        <button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="w-full py-4 bg-primary hover:bg-primary-light text-white font-extrabold rounded-full text-xs tracking-widest uppercase transition-all cursor-pointer shadow-lg shadow-primary/20 hover:shadow-primary/45 border border-primary-light/20 flex items-center justify-center gap-2"
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              <span>Sending to Kitchen...</span>
+                            </>
+                          ) : (
+                            <span className="flex items-center justify-center gap-1.5">
+                              <span>Submit Order to Kitchen</span> <Flame className="w-4 h-4" />
+                            </span>
+                          )}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. MOBILE VIEW: STEP-BASED */}
+                <div className="md:hidden flex flex-col h-full overflow-hidden">
+                  {cartStep === 'items' ? (
+                    <div className="flex flex-col h-full overflow-hidden justify-between">
+                      {/* Items scroll area */}
+                      <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+                        <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block border-b border-white/5 pb-2">Selected Items</span>
+                        {Object.values(cart).map((cartItem) => {
+                          const item = cartItem.item;
+                          const starches = item.primaryStarchOptions ? JSON.parse(item.primaryStarchOptions) : [];
+                          const salads = item.complementarySaladOptions ? JSON.parse(item.complementarySaladOptions) : [];
+                          const veggies = item.sideVeggieOptions ? JSON.parse(item.sideVeggieOptions) : [];
+
+                          return (
+                            <div key={item.id} className="bg-bg-dark/40 border border-white/5 rounded-2xl p-4 space-y-3 shadow-inner">
+                              <div className="flex justify-between items-start gap-4">
+                                {item.image && item.image !== 'null' && item.image !== '' && (
+                                  <div className="w-12 h-12 rounded-full overflow-hidden border border-white/10 bg-bg-dark flex-shrink-0">
+                                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-heading font-extrabold text-sm text-white uppercase truncate tracking-tight">{item.name}</h4>
+                                  <span className="text-xs text-primary-light font-black block mt-0.5">R {getItemPrice(cartItem).toFixed(2)}</span>
+                                </div>
+                                <button
+                                  onClick={() => handleRemoveItem(item.id)}
+                                  className="text-white/30 hover:text-red-500 transition-colors text-sm cursor-pointer"
+                                  aria-label="Remove item"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+
+                              {(starches.length > 0 || salads.length > 0 || veggies.length > 0) && (
+                                <div className="pt-2 border-t border-white/5 grid grid-cols-2 gap-2">
+                                  {starches.length > 0 && (
+                                    <div className="space-y-1">
+                                      <label className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Choice of Starch</label>
+                                      <select
+                                        value={cartItem.selectedStarch || ''}
+                                        onChange={(e) => handleUpdateOptions(item.id, 'selectedStarch', e.target.value)}
+                                        className="w-full bg-bg-dark border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/80 focus:border-primary focus:outline-none"
+                                      >
+                                        {starches.map((s: string) => <option key={s} value={s}>{s}</option>)}
+                                      </select>
+                                    </div>
+                                  )}
+                                  {salads.length > 0 && (
+                                    <div className="space-y-1">
+                                      <label className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Choice of Salad</label>
+                                      <select
+                                        value={cartItem.selectedSalad || ''}
+                                        onChange={(e) => handleUpdateOptions(item.id, 'selectedSalad', e.target.value)}
+                                        className="w-full bg-bg-dark border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/80 focus:border-primary focus:outline-none"
+                                      >
+                                        {salads.map((s: string) => <option key={s} value={s}>{s}</option>)}
+                                      </select>
+                                    </div>
+                                  )}
+                                  {veggies.length > 0 && (
+                                    <div className="space-y-1 col-span-2">
+                                      <label className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Choice of Side Veggie</label>
+                                      <select
+                                        value={cartItem.selectedVeggie || ''}
+                                        onChange={(e) => handleUpdateOptions(item.id, 'selectedVeggie', e.target.value)}
+                                        className="w-full bg-bg-dark border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/80 focus:border-primary focus:outline-none"
+                                      >
+                                        {veggies.map((s: string) => <option key={s} value={s}>{s}</option>)}
+                                      </select>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {((cartItem.selectedExtras && cartItem.selectedExtras.length > 0) ||
+                                (cartItem.selectedBeverages && cartItem.selectedBeverages.length > 0)) && (
+                                  <div className="pt-2 border-t border-white/5 space-y-1">
+                                    {cartItem.selectedExtras && cartItem.selectedExtras.length > 0 && (
+                                      <div className="text-[10px] text-white/70">
+                                        <span className="text-white/40 font-bold uppercase tracking-wider block">Extras:</span>
+                                        <div className="flex flex-wrap gap-1 mt-0.5">
+                                          {cartItem.selectedExtras.map((ex, idx) => (
+                                            <span key={idx} className="bg-primary/20 text-primary-light border border-primary/20 rounded-full px-2 py-0.5 text-[9px] font-medium">
+                                              {ex.name} (+R{ex.price.toFixed(2)})
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                    {cartItem.selectedBeverages && cartItem.selectedBeverages.length > 0 && (
+                                      <div className="text-[10px] text-white/70">
+                                        <span className="text-white/40 font-bold uppercase tracking-wider block">Beverages:</span>
+                                        <div className="flex flex-wrap gap-1 mt-0.5">
+                                          {cartItem.selectedBeverages.map((bev, idx) => (
+                                            <span key={idx} className="bg-primary/20 text-primary-light border border-primary/20 rounded-full px-2 py-0.5 text-[9px] font-medium">
+                                              {bev.name} (+R{bev.price.toFixed(2)})
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                              <div className="flex justify-between items-center pt-2">
+                                <span className="text-[10px] uppercase text-white/30 tracking-widest font-black">Quantity</span>
+                                <div className="flex items-center justify-between w-24 bg-bg-dark rounded-full p-0.5 border border-white/5">
+                                  <button
+                                    onClick={() => handleDecrement(item)}
+                                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/5 cursor-pointer"
+                                  >
+                                    −
+                                  </button>
+                                  <span className="text-xs font-black text-white">{cartItem.quantity}</span>
+                                  <button
+                                    onClick={() => handleIncrement(item)}
+                                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/5 cursor-pointer"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Checkout actions */}
+                      <div className="border-t border-white/10 pt-4 mt-2 space-y-3 bg-bg-card">
+                        <div className="flex justify-between text-white font-extrabold text-sm px-2">
+                          <span>Total:</span>
+                          <span className="text-primary-light">R {totalCartPrice.toFixed(2)}</span>
+                        </div>
+                        <button
+                          onClick={() => setCartStep('checkout')}
+                          className="w-full py-4 bg-primary hover:bg-primary-light text-white font-extrabold rounded-full text-xs tracking-widest uppercase shadow-lg shadow-primary/20 border border-primary-light/20 flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <span>Proceed to Checkout</span> <Check className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col h-full overflow-hidden justify-between">
+                      {/* Back button */}
                       <button
-                        onClick={() => handleRemoveItem(item.id)}
-                        className="text-white/30 hover:text-red-500 transition-colors text-sm cursor-pointer"
-                        aria-label="Remove item"
+                        onClick={() => setCartStep('items')}
+                        className="flex items-center gap-1.5 text-[10px] font-bold text-primary-light uppercase tracking-widest hover:text-white transition-colors mb-4 cursor-pointer self-start"
                       >
-                        ✕
+                        ← Back to Plate
                       </button>
-                    </div>
 
-                    {/* DYNAMIC OPTION SELECTORS (STARCH / SALAD / VEGGIE) FROM CMS */}
-                    {(starches.length > 0 || salads.length > 0 || veggies.length > 0) && (
-                      <div className="pt-2 border-t border-white/5 grid grid-cols-2 gap-2">
-                        {starches.length > 0 && (
-                          <div className="space-y-1">
-                            <label className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Choice of Starch</label>
-                            <select
-                              value={cartItem.selectedStarch || ''}
-                              onChange={(e) => handleUpdateOptions(item.id, 'selectedStarch', e.target.value)}
-                              className="w-full bg-bg-dark border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/80 focus:border-primary focus:outline-none"
-                            >
-                              {starches.map((s: string) => <option key={s} value={s}>{s}</option>)}
-                            </select>
+                      {/* Checkout Form & Details */}
+                      <div className="flex-1 overflow-y-auto space-y-6 pr-1">
+                        <div className="space-y-2 text-sm border-b border-white/5 pb-4">
+                          <div className="flex justify-between text-white/50 text-xs">
+                            <span>Subtotal</span>
+                            <span>R {subtotal.toFixed(2)}</span>
                           </div>
-                        )}
-
-                        {salads.length > 0 && (
-                          <div className="space-y-1">
-                            <label className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Choice of Salad</label>
-                            <select
-                              value={cartItem.selectedSalad || ''}
-                              onChange={(e) => handleUpdateOptions(item.id, 'selectedSalad', e.target.value)}
-                              className="w-full bg-bg-dark border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/80 focus:border-primary focus:outline-none"
-                            >
-                              {salads.map((s: string) => <option key={s} value={s}>{s}</option>)}
-                            </select>
+                          <div className="flex justify-between text-white/50 text-xs">
+                            <span>VAT (15%)</span>
+                            <span>R {calculatedVat.toFixed(2)}</span>
                           </div>
-                        )}
-
-                        {veggies.length > 0 && (
-                          <div className="space-y-1 col-span-2">
-                            <label className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Choice of Side Veggie</label>
-                            <select
-                              value={cartItem.selectedVeggie || ''}
-                              onChange={(e) => handleUpdateOptions(item.id, 'selectedVeggie', e.target.value)}
-                              className="w-full bg-bg-dark border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/80 focus:border-primary focus:outline-none"
-                            >
-                              {veggies.map((s: string) => <option key={s} value={s}>{s}</option>)}
-                            </select>
+                          <div className="flex justify-between font-extrabold text-white text-base pt-1">
+                            <span>Grand Total</span>
+                            <span className="text-primary-light">R {totalCartPrice.toFixed(2)}</span>
                           </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Selected Extras & Beverages */}
-                    {((cartItem.selectedExtras && cartItem.selectedExtras.length > 0) ||
-                      (cartItem.selectedBeverages && cartItem.selectedBeverages.length > 0)) && (
-                        <div className="pt-2 border-t border-white/5 space-y-1">
-                          {cartItem.selectedExtras && cartItem.selectedExtras.length > 0 && (
-                            <div className="text-[10px] text-white/70">
-                              <span className="text-white/40 font-bold uppercase tracking-wider block">Extras Added:</span>
-                              <div className="flex flex-wrap gap-1 mt-0.5">
-                                {cartItem.selectedExtras.map((ex, idx) => (
-                                  <span key={idx} className="bg-primary/20 text-primary-light border border-primary/20 rounded-full px-2 py-0.5 text-[9px] font-medium">
-                                    {ex.name} (+R{ex.price.toFixed(2)})
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {cartItem.selectedBeverages && cartItem.selectedBeverages.length > 0 && (
-                            <div className="text-[10px] text-white/70">
-                              <span className="text-white/40 font-bold uppercase tracking-wider block">Beverages Added:</span>
-                              <div className="flex flex-wrap gap-1 mt-0.5">
-                                {cartItem.selectedBeverages.map((bev, idx) => (
-                                  <span key={idx} className="bg-primary/20 text-primary-light border border-primary/20 rounded-full px-2 py-0.5 text-[9px] font-medium">
-                                    {bev.name} (+R{bev.price.toFixed(2)})
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
                         </div>
-                      )}
 
-                    {/* Quantity selectors */}
-                    <div className="flex justify-between items-center pt-2">
-                      <span className="text-[10px] uppercase text-white/30 tracking-widest font-black">Quantity</span>
-                      <div className="flex items-center justify-between w-24 bg-bg-dark rounded-full p-0.5 border border-white/5">
-                        <button
-                          onClick={() => handleDecrement(item)}
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/5 cursor-pointer"
-                        >
-                          −
-                        </button>
-                        <span className="text-xs font-black text-white">{cartItem.quantity}</span>
-                        <button
-                          onClick={() => handleIncrement(item)}
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/5 cursor-pointer"
-                        >
-                          +
-                        </button>
+                        <form onSubmit={handleCheckoutSubmit} className="space-y-4">
+                          <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block">Checkout Details</span>
+
+                          {orderError && (
+                            <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl text-center flex items-center justify-center gap-1.5">
+                              <AlertTriangle className="w-4 h-4 text-red-400" /> <span>{orderError}</span>
+                            </div>
+                          )}
+
+                          <div className="space-y-3">
+                            <input
+                              type="text"
+                              required
+                              placeholder="Your Name (Required)*"
+                              value={customerName}
+                              onChange={(e) => setCustomerName(e.target.value)}
+                              className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
+                            />
+
+                            <input
+                              type="tel"
+                              placeholder="Phone Number (Highly Recommended)"
+                              value={customerPhone}
+                              onChange={(e) => setCustomerPhone(e.target.value)}
+                              className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
+                            />
+
+                            <input
+                              type="email"
+                              placeholder="Email Address (For order updates)"
+                              value={customerEmail}
+                              onChange={(e) => setCustomerEmail(e.target.value)}
+                              className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
+                            />
+
+                            <div className="grid grid-cols-2 gap-2 bg-[#0d0b0a] p-1 rounded-xl border border-white/5 shadow-inner">
+                              <button
+                                type="button"
+                                onClick={() => setServiceMode('Pickup')}
+                                className={`py-2 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${serviceMode === 'Pickup'
+                                  ? 'bg-primary text-white shadow-md'
+                                  : 'text-white/50 hover:text-white'
+                                  }`}
+                              >
+                                <Car className="w-3.5 h-3.5" />
+                                <span>Pickup</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setServiceMode('Delivery')}
+                                className={`py-2 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${serviceMode === 'Delivery'
+                                  ? 'bg-primary text-white shadow-md'
+                                  : 'text-white/50 hover:text-white'
+                                  }`}
+                              >
+                                <Bike className="w-3.5 h-3.5" />
+                                <span>Delivery</span>
+                              </button>
+                            </div>
+
+                            {serviceMode === 'Delivery' && (
+                              <input
+                                type="text"
+                                required
+                                placeholder="Delivery Address (Required)*"
+                                value={deliveryAddress}
+                                onChange={(e) => setDeliveryAddress(e.target.value)}
+                                className="w-full bg-[#151211] border border-white/5 hover:border-primary focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
+                              />
+                            )}
+
+                            <input
+                              type="text"
+                              placeholder="Special instructions (e.g. Extra Gravy)"
+                              value={notes}
+                              onChange={(e) => setNotes(e.target.value)}
+                              className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
+                            />
+                          </div>
+
+                          <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="w-full py-4 bg-primary hover:bg-primary-light text-white font-extrabold rounded-full text-xs tracking-widest uppercase transition-all cursor-pointer shadow-lg shadow-primary/20 hover:shadow-primary/45 border border-primary-light/20 flex items-center justify-center gap-2"
+                          >
+                            {isSubmitting ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                <span>Sending to Kitchen...</span>
+                              </>
+                            ) : (
+                              <span className="flex items-center justify-center gap-1.5">
+                                <span>Submit Order</span> <Flame className="w-4 h-4" />
+                              </span>
+                            )}
+                          </button>
+                        </form>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* ACTIVE CART SUMMARY & CHECKOUT FORM */}
-        {!orderSuccess && Object.keys(cart).length > 0 && (
-          <div className="border-t border-white/10 bg-bg-dark/65 backdrop-blur-md p-6 space-y-6">
-
-            {/* Calculation Totals */}
-            <div className="space-y-2 text-sm border-b border-white/5 pb-4">
-              <div className="flex justify-between text-white/50 text-xs">
-                <span>Subtotal</span>
-                <span>R {subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-white/50 text-xs">
-                <span>VAT (15% South African Standard)</span>
-                <span>R {calculatedVat.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between font-extrabold text-white text-base pt-1">
-                <span>Grand Total</span>
-                <span className="text-primary-light">R {totalCartPrice.toFixed(2)}</span>
-              </div>
-            </div>
-
-            {/* CHECKOUT SUBMISSION FORM */}
-            <form onSubmit={handleCheckoutSubmit} className="space-y-4">
-              <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block">Checkout Details</span>
-
-              {orderError && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl text-center flex items-center justify-center gap-1.5">
-                  <AlertTriangle className="w-4 h-4 text-red-400" /> <span>{orderError}</span>
-                </div>
-              )}
-
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  required
-                  placeholder="Your Name (Required)*"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
-                />
-
-                <input
-                  type="tel"
-                  placeholder="Phone Number (Highly Recommended)"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
-                />
-
-                <input
-                  type="email"
-                  placeholder="Email Address (For order updates)"
-                  value={customerEmail}
-                  onChange={(e) => setCustomerEmail(e.target.value)}
-                  className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
-                />
-
-                {/* Service Mode Toggles */}
-                <div className="grid grid-cols-2 gap-2 bg-[#0d0b0a] p-1 rounded-xl border border-white/5 shadow-inner">
-                  <button
-                    type="button"
-                    onClick={() => setServiceMode('Pickup')}
-                    className={`py-2 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${serviceMode === 'Pickup'
-                      ? 'bg-primary text-white shadow-md'
-                      : 'text-white/50 hover:text-white'
-                      }`}
-                  >
-                    <Car className="w-3.5 h-3.5" />
-                    <span>Pickup</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setServiceMode('Delivery')}
-                    className={`py-2 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${serviceMode === 'Delivery'
-                      ? 'bg-primary text-white shadow-md'
-                      : 'text-white/50 hover:text-white'
-                      }`}
-                  >
-                    <Bike className="w-3.5 h-3.5" />
-                    <span>Delivery</span>
-                  </button>
-                </div>
-
-                {/* Delivery Address Input */}
-                {serviceMode === 'Delivery' && (
-                  <input
-                    type="text"
-                    required
-                    placeholder="Delivery Address (Required)*"
-                    value={deliveryAddress}
-                    onChange={(e) => setDeliveryAddress(e.target.value)}
-                    className="w-full bg-[#151211] border border-white/5 hover:border-primary focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white animate-pulse-slow"
-                  />
-                )}
-
-                <input
-                  type="text"
-                  placeholder="Special instructions (e.g. Extra Gravy)"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
-                />
-              </div>
-
-              {/* Glowing Submit Button */}
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-4 bg-primary hover:bg-primary-light text-white font-extrabold rounded-full text-xs tracking-widest uppercase transition-all cursor-pointer shadow-lg shadow-primary/20 hover:shadow-primary/45 border border-primary-light/20 flex items-center justify-center gap-2"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Sending to Kitchen...</span>
-                  </>
-                ) : (
-                  <span className="flex items-center justify-center gap-1.5">
-                    <span>Submit Order to Kitchen</span> <Flame className="w-4 h-4" />
-                  </span>
-                )}
-              </button>
-            </form>
-
-          </div>
-        )}
-      </div>
-      {/* PREMIUM CUSTOMIZER DIALOG MODAL */}
-      {activeCustomizerItem && (() => {
-        const item = activeCustomizerItem;
-        const starches = item.primaryStarchOptions ? JSON.parse(item.primaryStarchOptions) : [];
-        const salads = item.complementarySaladOptions ? JSON.parse(item.complementarySaladOptions) : [];
-        const veggies = item.sideVeggieOptions ? JSON.parse(item.sideVeggieOptions) : [];
-        const extrasList = item.addOnSides ? JSON.parse(item.addOnSides) : [];
-        const beveragesList = item.beverages ? JSON.parse(item.beverages) : [];
-
-        // Calculate active item cost dynamically inside the modal
-        let runningPrice = item.price;
-        extrasList.forEach((extra: any) => {
-          if (customExtras[extra.name]) {
-            runningPrice += parseExtraPrice(extra.price);
-          }
-        });
-        beveragesList.forEach((bev: any) => {
-          if (customBeverages[bev.name]) {
-            runningPrice += parseExtraPrice(bev.price);
-          }
-        });
-
-        return (
-          <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm transition-opacity duration-300"
-              onClick={() => setActiveCustomizerItem(null)}
-            />
-            {/* Modal */}
-            <div className="fixed inset-x-4 bottom-4 top-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[680px] md:max-h-[90vh] z-50 bg-bg-card/98 border border-white/10 rounded-[2.5rem] shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl overflow-hidden flex flex-col justify-between animate-fade-in">
-
-              {/* Header with warm styling */}
-              <div className="p-6 border-b border-white/5 flex justify-between items-center bg-bg-dark/30 flex-shrink-0">
-                <div className="flex items-center gap-3">
-                  <ChefHat className="w-6 h-6 text-primary-light" />
-                  <div>
-                    <h3 className="font-heading text-lg font-extrabold text-white tracking-tight uppercase">Customize {item.name}</h3>
-                    <p className="text-[10px] text-primary-light font-black tracking-widest uppercase mt-0.5">Craft Your Perfect Plate</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setActiveCustomizerItem(null)}
-                  className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                  aria-label="Close customizer"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Scrollable Customization Fields */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
-
-                {/* Hero Dish Showcase */}
-                <div className="flex flex-col sm:flex-row items-center gap-6 bg-bg-dark/40 border border-white/5 rounded-3xl p-5 shadow-inner">
-                  {item.image && item.image !== 'null' && item.image !== '' && (
-                    <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary bg-bg-dark shadow-[0_10px_25px_rgba(0,0,0,0.5)] flex-shrink-0">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                      />
                     </div>
                   )}
-                  <div className="text-center sm:text-left space-y-1.5">
-                    <h4 className="font-heading text-lg font-bold text-white uppercase tracking-tight">{item.name}</h4>
-                    <p className="text-white/60 text-xs leading-relaxed max-w-md">
-                      {item.description || "Freshly cooked traditional South African delight prepared with clean ingredients."}
-                    </p>
-                  </div>
                 </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      {/* PREMIUM CUSTOMIZER DIALOG MODAL */ }
+  {
+    activeCustomizerItem && (() => {
+      const item = activeCustomizerItem;
+      const starches = item.primaryStarchOptions ? JSON.parse(item.primaryStarchOptions) : [];
+      const salads = item.complementarySaladOptions ? JSON.parse(item.complementarySaladOptions) : [];
+      const veggies = item.sideVeggieOptions ? JSON.parse(item.sideVeggieOptions) : [];
+      const extrasList = item.addOnSides ? JSON.parse(item.addOnSides) : [];
+      const beveragesList = item.beverages ? JSON.parse(item.beverages) : [];
 
-                {/* Starches */}
-                {starches.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase">Choice of Starch</span>
-                      <span className="text-[9px] bg-primary/20 text-primary-light border border-primary/20 px-2 py-0.5 rounded-full font-black uppercase">Required</span>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {starches.map((starch: string) => (
-                        <button
-                          key={starch}
-                          type="button"
-                          onClick={() => setCustomStarch(starch)}
-                          className={`p-3 rounded-2xl border text-center text-xs font-bold transition-all cursor-pointer ${customStarch === starch
-                            ? 'bg-primary/25 border-primary text-white shadow-md'
-                            : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
-                            }`}
-                        >
-                          {starch}
-                        </button>
-                      ))}
-                    </div>
+      // Calculate active item cost dynamically inside the modal
+      let runningPrice = item.price;
+      extrasList.forEach((extra: any) => {
+        if (customExtras[extra.name]) {
+          runningPrice += parseExtraPrice(extra.price);
+        }
+      });
+      beveragesList.forEach((bev: any) => {
+        if (customBeverages[bev.name]) {
+          runningPrice += parseExtraPrice(bev.price);
+        }
+      });
+
+      return (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm transition-opacity duration-300"
+            onClick={() => setActiveCustomizerItem(null)}
+          />
+          {/* Modal */}
+          <div className="fixed inset-x-4 bottom-4 top-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[680px] md:max-h-[90vh] z-50 bg-bg-card/98 border border-white/10 rounded-[2.5rem] shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl overflow-hidden flex flex-col justify-between animate-fade-in">
+
+            {/* Header with warm styling */}
+            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-bg-dark/30 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <ChefHat className="w-6 h-6 text-primary-light" />
+                <div>
+                  <h3 className="font-heading text-lg font-extrabold text-white tracking-tight uppercase">Customize {item.name}</h3>
+                  <p className="text-[10px] text-primary-light font-black tracking-widest uppercase mt-0.5">Craft Your Perfect Plate</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveCustomizerItem(null)}
+                className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                aria-label="Close customizer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Scrollable Customization Fields */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
+              {/* Hero Dish Showcase */}
+              <div className="flex flex-col sm:flex-row items-center gap-6 bg-bg-dark/40 border border-white/5 rounded-3xl p-5 shadow-inner">
+                {item.image && item.image !== 'null' && item.image !== '' && (
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary bg-bg-dark shadow-[0_10px_25px_rgba(0,0,0,0.5)] flex-shrink-0">
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 )}
-
-                {/* Salads */}
-                {salads.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase">Choice of Salad</span>
-                      <span className="text-[9px] bg-primary/20 text-primary-light border border-primary/20 px-2 py-0.5 rounded-full font-black uppercase">Required</span>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {salads.map((salad: string) => (
-                        <button
-                          key={salad}
-                          type="button"
-                          onClick={() => setCustomSalad(salad)}
-                          className={`p-3 rounded-2xl border text-center text-xs font-bold transition-all cursor-pointer ${customSalad === salad
-                            ? 'bg-primary/25 border-primary text-white shadow-md'
-                            : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
-                            }`}
-                        >
-                          {salad}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Side Veggies */}
-                {veggies.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase">Choice of Side Veggie</span>
-                      <span className="text-[9px] bg-primary/20 text-primary-light border border-primary/20 px-2 py-0.5 rounded-full font-black uppercase">Required</span>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {veggies.map((veg: string) => (
-                        <button
-                          key={veg}
-                          type="button"
-                          onClick={() => setCustomVeggie(veg)}
-                          className={`p-3 rounded-2xl border text-center text-xs font-bold transition-all cursor-pointer ${customVeggie === veg
-                            ? 'bg-primary/25 border-primary text-white shadow-md'
-                            : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
-                            }`}
-                        >
-                          {veg}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Added Extras */}
-                {extrasList.length > 0 && (
-                  <div className="space-y-3">
-                    <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block">Add Extras</span>
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      {extrasList.map((extra: any) => {
-                        const isChecked = !!customExtras[extra.name];
-                        const price = parseExtraPrice(extra.price);
-                        return (
-                          <button
-                            key={extra.name}
-                            type="button"
-                            onClick={() => setCustomExtras(prev => ({ ...prev, [extra.name]: !isChecked }))}
-                            className={`p-4 rounded-2xl border text-left text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${isChecked
-                              ? 'bg-primary/20 border-primary text-white shadow-md'
-                              : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
-                              }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isChecked ? 'bg-primary border-primary text-white' : 'border-white/20'}`}>
-                                {isChecked && <Check className="w-3 h-3 text-white" />}
-                              </div>
-                              <span>{extra.name}</span>
-                            </div>
-                            <span className="text-primary-light font-black">+ R {price.toFixed(2)}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Beverages */}
-                {beveragesList.length > 0 && (
-                  <div className="space-y-3">
-                    <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block">Select Beverage</span>
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      {beveragesList.map((bev: any) => {
-                        const isChecked = !!customBeverages[bev.name];
-                        const price = parseExtraPrice(bev.price);
-                        return (
-                          <button
-                            key={bev.name}
-                            type="button"
-                            onClick={() => setCustomBeverages(prev => ({ ...prev, [bev.name]: !isChecked }))}
-                            className={`p-4 rounded-2xl border text-left text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${isChecked
-                              ? 'bg-primary/20 border-primary text-white shadow-md'
-                              : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
-                              }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isChecked ? 'bg-primary border-primary text-white' : 'border-white/20'}`}>
-                                {isChecked && <Check className="w-3 h-3 text-white" />}
-                              </div>
-                              <span>{bev.name}</span>
-                            </div>
-                            <span className="text-primary-light font-black">+ R {price.toFixed(2)}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
+                <div className="text-center sm:text-left space-y-1.5">
+                  <h4 className="font-heading text-lg font-bold text-white uppercase tracking-tight">{item.name}</h4>
+                  <p className="text-white/60 text-xs leading-relaxed max-w-md">
+                    {item.description || "Freshly cooked traditional South African delight prepared with clean ingredients."}
+                  </p>
+                </div>
               </div>
 
-              {/* Dynamic Compound Cost & Add to Plate button */}
-              <div className="border-t border-white/10 bg-bg-dark/65 backdrop-blur-md p-6 flex flex-col sm:flex-row justify-between items-center gap-4 flex-shrink-0">
-                <div className="text-center sm:text-left">
-                  <span className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Compound Cost</span>
-                  <span className="text-2xl font-black text-primary-light">R {runningPrice.toFixed(2)}</span>
+              {/* Starches */}
+              {starches.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase">Choice of Starch</span>
+                    <span className="text-[9px] bg-primary/20 text-primary-light border border-primary/20 px-2 py-0.5 rounded-full font-black uppercase">Required</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {starches.map((starch: string) => (
+                      <button
+                        key={starch}
+                        type="button"
+                        onClick={() => setCustomStarch(starch)}
+                        className={`p-3 rounded-2xl border text-center text-xs font-bold transition-all cursor-pointer ${customStarch === starch
+                          ? 'bg-primary/25 border-primary text-white shadow-md'
+                          : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
+                          }`}
+                      >
+                        {starch}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleConfirmCustomization}
-                  className="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primary-light text-white font-extrabold rounded-full text-xs tracking-widest uppercase transition-all cursor-pointer shadow-lg shadow-primary/20 hover:shadow-primary/45 border border-primary-light/20 flex items-center justify-center gap-2"
-                >
-                  <span>Confirm & Add to Plate</span> <Flame className="w-4 h-4" />
-                </button>
-              </div>
+              )}
+
+              {/* Salads */}
+              {salads.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase">Choice of Salad</span>
+                    <span className="text-[9px] bg-primary/20 text-primary-light border border-primary/20 px-2 py-0.5 rounded-full font-black uppercase">Required</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {salads.map((salad: string) => (
+                      <button
+                        key={salad}
+                        type="button"
+                        onClick={() => setCustomSalad(salad)}
+                        className={`p-3 rounded-2xl border text-center text-xs font-bold transition-all cursor-pointer ${customSalad === salad
+                          ? 'bg-primary/25 border-primary text-white shadow-md'
+                          : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
+                          }`}
+                      >
+                        {salad}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Side Veggies */}
+              {veggies.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase">Choice of Side Veggie</span>
+                    <span className="text-[9px] bg-primary/20 text-primary-light border border-primary/20 px-2 py-0.5 rounded-full font-black uppercase">Required</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {veggies.map((veg: string) => (
+                      <button
+                        key={veg}
+                        type="button"
+                        onClick={() => setCustomVeggie(veg)}
+                        className={`p-3 rounded-2xl border text-center text-xs font-bold transition-all cursor-pointer ${customVeggie === veg
+                          ? 'bg-primary/25 border-primary text-white shadow-md'
+                          : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
+                          }`}
+                      >
+                        {veg}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Added Extras */}
+              {extrasList.length > 0 && (
+                <div className="space-y-3">
+                  <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block">Add Extras</span>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {extrasList.map((extra: any) => {
+                      const isChecked = !!customExtras[extra.name];
+                      const price = parseExtraPrice(extra.price);
+                      return (
+                        <button
+                          key={extra.name}
+                          type="button"
+                          onClick={() => setCustomExtras(prev => ({ ...prev, [extra.name]: !isChecked }))}
+                          className={`p-4 rounded-2xl border text-left text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${isChecked
+                            ? 'bg-primary/20 border-primary text-white shadow-md'
+                            : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
+                            }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isChecked ? 'bg-primary border-primary text-white' : 'border-white/20'}`}>
+                              {isChecked && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            <span>{extra.name}</span>
+                          </div>
+                          <span className="text-primary-light font-black">+ R {price.toFixed(2)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Beverages */}
+              {beveragesList.length > 0 && (
+                <div className="space-y-3">
+                  <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block">Select Beverage</span>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {beveragesList.map((bev: any) => {
+                      const isChecked = !!customBeverages[bev.name];
+                      const price = parseExtraPrice(bev.price);
+                      return (
+                        <button
+                          key={bev.name}
+                          type="button"
+                          onClick={() => setCustomBeverages(prev => ({ ...prev, [bev.name]: !isChecked }))}
+                          className={`p-4 rounded-2xl border text-left text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${isChecked
+                            ? 'bg-primary/20 border-primary text-white shadow-md'
+                            : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
+                            }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isChecked ? 'bg-primary border-primary text-white' : 'border-white/20'}`}>
+                              {isChecked && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            <span>{bev.name}</span>
+                          </div>
+                          <span className="text-primary-light font-black">+ R {price.toFixed(2)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
             </div>
-          </>
-        );
-      })()}
 
-      {/* Backdrop overlay */}
-      {isCartOpen && (
-        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-500" onClick={() => setIsCartOpen(false)} />
-      )}
+            {/* Dynamic Compound Cost & Add to Plate button */}
+            <div className="border-t border-white/10 bg-bg-dark/65 backdrop-blur-md p-6 flex flex-col sm:flex-row justify-between items-center gap-4 flex-shrink-0">
+              <div className="text-center sm:text-left">
+                <span className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Compound Cost</span>
+                <span className="text-2xl font-black text-primary-light">R {runningPrice.toFixed(2)}</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleConfirmCustomization}
+                className="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primary-light text-white font-extrabold rounded-full text-xs tracking-widest uppercase transition-all cursor-pointer shadow-lg shadow-primary/20 hover:shadow-primary/45 border border-primary-light/20 flex items-center justify-center gap-2"
+              >
+                <span>Confirm & Add to Plate</span> <Flame className="w-4 h-4" />
+              </button>
+            </div>
 
-      {/* Active Order Floating Tracker Badge */}
-      {activeOrderId && activeOrderData && !isCartOpen && (
-        <div className="fixed bottom-6 left-6 z-50 animate-fade-in">
-          <button
-            onClick={() => {
-              setCartSidebarTab('tracker');
-              setIsCartOpen(true);
-            }}
-            className="flex items-center gap-3 bg-bg-card/90 border border-primary/20 hover:border-primary text-white px-5 py-3 rounded-full shadow-[0_10px_30px_rgba(217,93,46,0.2)] hover:shadow-[0_10px_35px_rgba(217,93,46,0.35)] backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 group cursor-pointer relative"
-          >
-            {/* Pulsating glowing ember dot */}
-            <span className="relative flex h-2 w-2">
-              {['Received', 'Preparing', 'Ready'].includes(activeOrderData.status) && (
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              )}
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-            </span>
-            <span className="text-[10px] font-black tracking-widest uppercase text-white/90 flex items-center justify-center gap-1.5">
-              <span>Track order:</span> <span className="text-primary-light">{activeOrderData.status}</span> <ChefHat className="w-3.5 h-3.5 text-primary-light inline" />
-            </span>
-          </button>
-        </div>
-      )}
+          </div>
+        </>
+      );
+    })()
+  }
 
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onSuccess={(user) => { setUser(user); setIsAuthModalOpen(false); }} />
-    </div>
+  {/* Backdrop overlay */ }
+  {
+    isCartOpen && (
+      <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-500" onClick={() => setIsCartOpen(false)} />
+    )
+  }
+
+  {/* Active Order Floating Tracker Badge */ }
+  {
+    activeOrderId && activeOrderData && !isCartOpen && (
+      <div className="fixed bottom-6 left-6 z-50 animate-fade-in">
+        <button
+          onClick={() => {
+            setCartSidebarTab('tracker');
+            setIsCartOpen(true);
+          }}
+          className="flex items-center gap-3 bg-bg-card/90 border border-primary/20 hover:border-primary text-white px-5 py-3 rounded-full shadow-[0_10px_30px_rgba(217,93,46,0.2)] hover:shadow-[0_10px_35px_rgba(217,93,46,0.35)] backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 group cursor-pointer relative"
+        >
+          {/* Pulsating glowing ember dot */}
+          <span className="relative flex h-2 w-2">
+            {['Received', 'Preparing', 'Ready'].includes(activeOrderData.status) && (
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+            )}
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+          </span>
+          <span className="text-[10px] font-black tracking-widest uppercase text-white/90 flex items-center justify-center gap-1.5">
+            <span>Track order:</span> <span className="text-primary-light">{activeOrderData.status}</span> <ChefHat className="w-3.5 h-3.5 text-primary-light inline" />
+          </span>
+        </button>
+      </div>
+    )
+  }
+
+  <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onSuccess={(user) => { setUser(user); setIsAuthModalOpen(false); }} />
+    </div >
   );
 };
 
