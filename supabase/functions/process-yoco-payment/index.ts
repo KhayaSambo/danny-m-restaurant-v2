@@ -11,33 +11,35 @@ serve(async (req) => {
   }
 
   try {
-    const { token, amountInCents, currency } = await req.json()
+    const { amountInCents, currency, successUrl, cancelUrl } = await req.json()
 
-    // 1. Process with Yoco API
-    const yocoSecret = Deno.env.get('YOCO_SECRET_KEY') || 'sk_test_placeholder';
-    if (!yocoSecret) throw new Error('Yoco secret key not configured')
+    // 1. Fetch Yoco Private Secret Key from Environment
+    const yocoSecret = Deno.env.get('YOCO_SECRET_KEY');
+    if (!yocoSecret) throw new Error('YOCO_SECRET_KEY is not configured. Set it via: supabase secrets set YOCO_SECRET_KEY=sk_live_...')
 
-    const response = await fetch('https://online.yoco.com/v1/charges/', {
+    // 2. Post to Yoco's Hosted Checkout Session Creator
+    const response = await fetch('https://online.yoco.com/v1/checkouts', {
       method: 'POST',
       headers: {
         'X-Auth-Secret-Key': yocoSecret,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        token: token,
         amountInCents: amountInCents,
-        currency: currency || 'ZAR'
+        currency: currency || 'ZAR',
+        successUrl: successUrl,
+        cancelUrl: cancelUrl
       })
     })
 
     const data = await response.json()
 
     if (!response.ok) {
-      throw new Error(data.message || 'Payment processing failed')
+      throw new Error(data.message || 'Checkout session creation failed')
     }
 
     return new Response(
-      JSON.stringify({ success: true, chargeId: data.id }),
+      JSON.stringify({ success: true, redirectUrl: data.redirectUrl, checkoutId: data.id }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error: any) {

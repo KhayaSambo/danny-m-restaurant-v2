@@ -15,19 +15,50 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // validation/shake states
+  const [emailError, setEmailError] = useState(false);
+  const [emailShaking, setEmailShaking] = useState(false);
+  const [otpError, setOtpError] = useState(false);
+  const [otpShaking, setOtpShaking] = useState(false);
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    setEmailError(false);
+    setEmailShaking(false);
+  };
+
+  const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setOtp(e.target.value);
+    setOtpError(false);
+    setOtpShaking(false);
+  };
+
   if (!isOpen) return null;
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email) {
+      setEmailError(true);
+      setEmailShaking(true);
+      setTimeout(() => setEmailShaking(false), 280);
+      return;
+    }
     try {
       setLoading(true);
       setError(null);
-      const { error } = await supabase.auth.signInWithOtp({ email });
+      const { error } = await supabase.auth.signInWithOtp({ 
+        email,
+        options: {
+          emailRedirectTo: window.location.origin
+        }
+      });
       if (error) throw error;
       setStep('otp');
     } catch (err: any) {
       setError(err.message || 'Failed to send OTP.');
+      setEmailError(true);
+      setEmailShaking(true);
+      setTimeout(() => setEmailShaking(false), 280);
     } finally {
       setLoading(false);
     }
@@ -35,7 +66,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otp) return;
+    if (!otp) {
+      setOtpError(true);
+      setOtpShaking(true);
+      setTimeout(() => setOtpShaking(false), 280);
+      return;
+    }
     try {
       setLoading(true);
       setError(null);
@@ -51,6 +87,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       }
     } catch (err: any) {
       setError(err.message || 'Invalid OTP. Please try again.');
+      setOtpError(true);
+      setOtpShaking(true);
+      setTimeout(() => setOtpShaking(false), 280);
     } finally {
       setLoading(false);
     }
@@ -81,9 +120,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 <input 
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={handleEmailChange}
                   placeholder="name@example.com"
-                  className="w-full bg-bg-dark border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                  className={`w-full bg-bg-dark border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm outline-none transition-all t-fire-input ${emailError ? 'is-error' : ''} ${emailShaking ? 'is-shaking' : ''}`}
                   required
                 />
               </div>
@@ -99,18 +138,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           </form>
         ) : (
           <form onSubmit={handleVerifyOtp} className="space-y-4">
-            <div className="flex items-center gap-2 mb-4">
-              <CheckCircle2 className="w-4 h-4 text-green-400" />
-              <span className="text-xs text-green-400 font-bold">OTP sent to {email}</span>
-            </div>
+             <div className="flex items-center justify-between gap-2 mb-4 bg-green-400/5 border border-green-400/10 rounded-xl p-3">
+               <div className="flex items-center gap-2">
+                 <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
+                 <span className="text-xs text-green-400/90 font-medium">OTP sent to <span className="font-bold text-green-400">{email}</span></span>
+               </div>
+               <button 
+                 type="button" 
+                 onClick={() => {
+                   setStep('email');
+                   setOtp('');
+                   setOtpError(false);
+                   setOtpShaking(false);
+                 }}
+                 className="text-[10px] uppercase tracking-widest font-black text-white/50 hover:text-primary-light transition-colors cursor-pointer bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-lg border border-white/5"
+               >
+                 Change
+               </button>
+             </div>
             <div>
               <label className="block text-[10px] font-black tracking-widest text-white/50 uppercase mb-2">Enter 6-Digit Code</label>
               <input 
                 type="text"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value)}
+                onChange={handleOtpChange}
                 placeholder="000000"
-                className="w-full bg-bg-dark border border-white/10 rounded-xl py-3 px-4 text-white text-center tracking-[0.5em] text-lg font-bold focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                className={`w-full bg-bg-dark border border-white/10 rounded-xl py-3 px-4 text-white text-center tracking-[0.5em] text-lg font-bold outline-none transition-all t-fire-input ${otpError ? 'is-error' : ''} ${otpShaking ? 'is-shaking' : ''}`}
                 required
                 maxLength={6}
               />

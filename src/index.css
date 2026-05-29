@@ -44,6 +44,9 @@
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply font-body text-white/90 bg-bg-light antialiased selection:bg-primary selection:text-white;
   }
@@ -72,6 +75,48 @@
   --dropdown-pre-scale: 0.97;
   --dropdown-closing-scale: 0.99;
   --dropdown-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Modal open / close */
+  --modal-open-dur: 250ms;
+  --modal-close-dur: 150ms;
+  --modal-scale: 0.96;
+  --modal-scale-close: 0.96;
+  --modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Error state shake */
+  --shake-distance: 6px;
+  --shake-overshoot: 4px;
+  --shake-dur-a: 80ms;
+  --shake-dur-b: 60ms;
+  --shake-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --revert-hold: 3000ms;
+  --revert-dur: 280ms;
+}
+
+.t-modal {
+  transform-origin: center;
+  transform: scale(var(--modal-scale));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--modal-open-dur) var(--modal-ease),
+    opacity   var(--modal-open-dur) var(--modal-ease);
+  will-change: transform, opacity;
+}
+.t-modal.is-open {
+  transform: scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+.t-modal.is-closing {
+  transform: scale(var(--modal-scale-close));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--modal-close-dur) var(--modal-ease),
+    opacity   var(--modal-close-dur) var(--modal-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-modal { transition: none !important; }
 }
 
 .t-panel-slide {
@@ -129,3 +174,162 @@
 @media (prefers-reduced-motion: reduce) {
   .t-panel-slide, .t-dropdown { transition: none !important; }
 }
+
+/* --- Premium Animated Inputs System (transitions-dev) --- */
+
+/* Subtle, Slow-Moving Fire Radial Glow Animation */
+@keyframes fire-glow-rotate {
+  0% {
+    box-shadow: 
+      4px -2px 14px rgba(230, 126, 34, 0.12),
+      -4px 2px 14px rgba(211, 84, 0, 0.06),
+      inset 0 0 3px rgba(211, 84, 0, 0.08);
+    border-color: rgba(230, 126, 34, 0.22);
+  }
+  25% {
+    box-shadow: 
+      2px 4px 14px rgba(230, 126, 34, 0.12),
+      -2px -4px 14px rgba(211, 84, 0, 0.06),
+      inset 0 0 3px rgba(211, 84, 0, 0.08);
+    border-color: rgba(230, 126, 34, 0.28);
+  }
+  50% {
+    box-shadow: 
+      -4px 2px 14px rgba(230, 126, 34, 0.12),
+      4px -2px 14px rgba(211, 84, 0, 0.06),
+      inset 0 0 3px rgba(211, 84, 0, 0.08);
+    border-color: rgba(230, 126, 34, 0.22);
+  }
+  75% {
+    box-shadow: 
+      -2px -4px 14px rgba(230, 126, 34, 0.12),
+      2px 4px 14px rgba(211, 84, 0, 0.06),
+      inset 0 0 3px rgba(211, 84, 0, 0.08);
+    border-color: rgba(230, 126, 34, 0.28);
+  }
+  100% {
+    box-shadow: 
+      4px -2px 14px rgba(230, 126, 34, 0.12),
+      -4px 2px 14px rgba(211, 84, 0, 0.06),
+      inset 0 0 3px rgba(211, 84, 0, 0.08);
+    border-color: rgba(230, 126, 34, 0.22);
+  }
+}
+
+/* Focused circulate animation (slightly brighter for active state) */
+@keyframes fire-glow-rotate-focus {
+  0% {
+    box-shadow: 
+      6px -3px 18px rgba(230, 126, 34, 0.25),
+      -6px 3px 18px rgba(211, 84, 0, 0.12),
+      inset 0 0 4px rgba(211, 84, 0, 0.15);
+    border-color: rgba(230, 126, 34, 0.5);
+  }
+  25% {
+    box-shadow: 
+      3px 6px 18px rgba(230, 126, 34, 0.25),
+      -3px -6px 18px rgba(211, 84, 0, 0.12),
+      inset 0 0 4px rgba(211, 84, 0, 0.15);
+    border-color: rgba(230, 126, 34, 0.55);
+  }
+  50% {
+    box-shadow: 
+      -6px 3px 18px rgba(230, 126, 34, 0.25),
+      6px -3px 18px rgba(211, 84, 0, 0.12),
+      inset 0 0 4px rgba(211, 84, 0, 0.15);
+    border-color: rgba(230, 126, 34, 0.5);
+  }
+  75% {
+    box-shadow: 
+      -3px -6px 18px rgba(230, 126, 34, 0.25),
+      3px 6px 18px rgba(211, 84, 0, 0.12),
+      inset 0 0 4px rgba(211, 84, 0, 0.15);
+    border-color: rgba(230, 126, 34, 0.55);
+  }
+  100% {
+    box-shadow: 
+      6px -3px 18px rgba(230, 126, 34, 0.25),
+      -6px 3px 18px rgba(211, 84, 0, 0.12),
+      inset 0 0 4px rgba(211, 84, 0, 0.15);
+    border-color: rgba(230, 126, 34, 0.5);
+  }
+}
+
+/* Master Input Class */
+.t-fire-input {
+  color: #ffffff !important;
+  background-color: #151211 !important;
+  /* Blur transitions slowly (0.75s) so the glow fades out dynamically when shifting focus */
+  transition: 
+    border-color 0.75s cubic-bezier(0.22, 1, 0.36, 1), 
+    box-shadow 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: box-shadow, border-color;
+}
+
+.t-fire-input::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.t-fire-input:hover {
+  animation: fire-glow-rotate 6s infinite linear;
+  border-color: rgba(230, 126, 34, 0.35) !important;
+  /* Fast fade-in for hover state */
+  transition: 
+    border-color 0.2s cubic-bezier(0.22, 1, 0.36, 1), 
+    box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.t-fire-input:focus {
+  animation: fire-glow-rotate-focus 4.5s infinite linear;
+  border-color: rgba(230, 126, 34, 0.55) !important;
+  outline: none;
+  /* Rapid fade-in for active focused state to feel responsive */
+  transition: 
+    border-color 0.25s cubic-bezier(0.22, 1, 0.36, 1), 
+    box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+
+
+/* Error & Shaking States */
+.t-fire-input.is-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.5), inset 0 0 4px rgba(239, 68, 68, 0.3) !important;
+  animation: none !important; /* Suspend fire pulse during error */
+}
+
+.t-fire-input.is-shaking {
+  animation: t-input-shake calc(
+      var(--shake-dur-a, 80ms) * 2 + var(--shake-dur-b, 60ms) * 2
+    ) linear !important;
+}
+
+/* Multi-segment keyframe error shake */
+@keyframes t-input-shake {
+  0%      { transform: translateX(0);                                 animation-timing-function: var(--shake-ease); }
+  28.57%  { transform: translateX(var(--shake-distance));             animation-timing-function: var(--shake-ease); }
+  57.14%  { transform: translateX(calc(var(--shake-distance) * -1)); animation-timing-function: var(--shake-ease); }
+  78.57%  { transform: translateX(var(--shake-overshoot));            animation-timing-function: var(--shake-ease); }
+  100%    { transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-fire-input { animation: none !important; transform: none !important; }
+}
+
+/* --- Yoco Payment Modal Layering Fix --- */
+/* Forces the secure Yoco Payment Popup iframe and its dynamically injected parent overlay wrappers to always render on top of checkout modals, headers, and traditional plate background animations. */
+#root ~ div,
+#root ~ iframe,
+#root ~ div iframe,
+iframe[src*="yoco"],
+div[id*="yoco"],
+div[class*="yoco"],
+#yoco-wrapper,
+.yoco-popup,
+.yoco-sdk-modal,
+.yoco-wrapper {
+  z-index: 999999999 !important;
+}
+
+

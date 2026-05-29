@@ -74,12 +74,41 @@ const App: React.FC = () => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
 
   // Checkout and Cart States
-  const [cart, setCart] = useState<Record<string, CartItem>>({});
+  const [cart, setCart] = useState<Record<string, CartItem>>(() => {
+    const saved = localStorage.getItem('danny-m-cart');
+    return saved ? JSON.parse(saved) : {};
+  });
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCartClosing, setIsCartClosing] = useState(false);
   const [cartStep, setCartStep] = useState<'items' | 'checkout'>('items');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
+
+  const handleCloseCart = () => {
+    setIsCartClosing(true);
+    const closeMs = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--modal-close-dur")
+    ) || 150;
+    setTimeout(() => {
+      setIsCartOpen(false);
+      setIsCartClosing(false);
+    }, closeMs);
+  };
+
+  const [isCustomizerClosing, setIsCustomizerClosing] = useState(false);
+
+  const handleCloseCustomizer = (onComplete?: () => void) => {
+    setIsCustomizerClosing(true);
+    const closeMs = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--modal-close-dur")
+    ) || 150;
+    setTimeout(() => {
+      setActiveCustomizerItem(null);
+      setIsCustomizerClosing(false);
+      if (onComplete) onComplete();
+    }, closeMs);
+  };
 
   useEffect(() => {
     if (isCartOpen) {
@@ -146,16 +175,172 @@ const App: React.FC = () => {
   const [customBeverages, setCustomBeverages] = useState<Record<string, boolean>>({});
 
   // Form Fields
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerName, setCustomerName] = useState(() => localStorage.getItem('danny-m-customer-name') || '');
+  const [customerPhone, setCustomerPhone] = useState(() => localStorage.getItem('danny-m-customer-phone') || '');
+  const [customerEmail, setCustomerEmail] = useState(() => localStorage.getItem('danny-m-customer-email') || '');
   const [serviceMode, setServiceMode] = useState<'Pickup' | 'Delivery'>('Pickup');
-  const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [notes, setNotes] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState(() => localStorage.getItem('danny-m-delivery-address') || '');
+  const [notes, setNotes] = useState(() => localStorage.getItem('danny-m-notes') || '');
+
+  // validation/shake states for checkout inputs
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+  const [fieldShaking, setFieldShaking] = useState<Record<string, boolean>>({});
+
+  const triggerFieldShake = (fieldName: string) => {
+    setFieldErrors(prev => ({ ...prev, [fieldName]: true }));
+    setFieldShaking(prev => ({ ...prev, [fieldName]: true }));
+    setTimeout(() => {
+      setFieldShaking(prev => ({ ...prev, [fieldName]: false }));
+    }, 280);
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCustomerName(e.target.value);
+    setFieldErrors(prev => ({ ...prev, name: false }));
+    setFieldShaking(prev => ({ ...prev, name: false }));
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCustomerPhone(e.target.value);
+    setFieldErrors(prev => ({ ...prev, phone: false }));
+    setFieldShaking(prev => ({ ...prev, phone: false }));
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCustomerEmail(e.target.value);
+    setFieldErrors(prev => ({ ...prev, email: false }));
+    setFieldShaking(prev => ({ ...prev, email: false }));
+  };
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNotes(e.target.value);
+    setFieldErrors(prev => ({ ...prev, notes: false }));
+    setFieldShaking(prev => ({ ...prev, notes: false }));
+  };
+
+  // Profile & Orders Modals States
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isProfileModalClosing, setIsProfileModalClosing] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
+  const [isOrdersModalClosing, setIsOrdersModalClosing] = useState(false);
+  const [pastOrders, setPastOrders] = useState<any[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+
+  const handleCloseProfileModal = () => {
+    setIsProfileModalClosing(true);
+    const closeMs = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--modal-close-dur")
+    ) || 150;
+    setTimeout(() => {
+      setIsProfileModalOpen(false);
+      setIsProfileModalClosing(false);
+    }, closeMs);
+  };
+
+  const handleCloseOrdersModal = () => {
+    setIsOrdersModalClosing(true);
+    const closeMs = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--modal-close-dur")
+    ) || 150;
+    setTimeout(() => {
+      setIsOrdersModalOpen(false);
+      setIsOrdersModalClosing(false);
+    }, closeMs);
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      setIsSavingProfile(true);
+      
+      // Save locally
+      localStorage.setItem('danny-m-customer-name', customerName);
+      localStorage.setItem('danny-m-customer-phone', customerPhone);
+      localStorage.setItem('danny-m-customer-email', customerEmail);
+      localStorage.setItem('danny-m-delivery-address', deliveryAddress);
+      
+      if (user) {
+        const { error } = await supabase.auth.updateUser({
+          data: {
+            full_name: customerName,
+            phone: customerPhone,
+            delivery_address: deliveryAddress
+          }
+        });
+        if (error) throw error;
+      }
+      
+      alert('Profile updated successfully!');
+      handleCloseProfileModal();
+    } catch (err: any) {
+      console.error('Error saving profile:', err);
+      alert('Saved locally. Profile could not be synced to Supabase: ' + err.message);
+      handleCloseProfileModal();
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const fetchPastOrders = async () => {
+    if (!user) return;
+    try {
+      setLoadingOrders(true);
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setPastOrders(data || []);
+    } catch (err) {
+      console.error('Error fetching past orders:', err);
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
+
+  // Reorder past items back into the active cart
+  const handleReorder = (orderItems: any[]) => {
+    const newCart = { ...cart };
+    
+    // Flatten categories to get all menu items
+    const allMenuItems: MenuItem[] = [];
+    categories.forEach(cat => {
+      cat.menuItems.forEach(item => {
+        allMenuItems.push(item);
+      });
+    });
+    
+    orderItems.forEach((orderItem: any) => {
+      const item = allMenuItems.find(i => i.id === orderItem.menuItemId);
+      if (item) {
+        if (newCart[item.id]) {
+          newCart[item.id].quantity += orderItem.quantity;
+        } else {
+          newCart[item.id] = {
+            item,
+            quantity: orderItem.quantity
+          };
+        }
+      }
+    });
+    
+    setCart(newCart);
+    handleCloseOrdersModal();
+    setIsCartOpen(true);
+  };
+
+  useEffect(() => {
+    if (isOrdersModalOpen && user) {
+      fetchPastOrders();
+    }
+  }, [isOrdersModalOpen, user]);
 
   // Scroll Lock effect for open modals
   useEffect(() => {
-    const isModalActive = isCartOpen || !!activeCustomizerItem || isAuthModalOpen;
+    const isModalActive = isCartOpen || !!activeCustomizerItem || isAuthModalOpen || isProfileModalOpen || isOrdersModalOpen;
     if (isModalActive) {
       document.body.classList.add('overflow-hidden');
     } else {
@@ -164,7 +349,32 @@ const App: React.FC = () => {
     return () => {
       document.body.classList.remove('overflow-hidden');
     };
-  }, [isCartOpen, activeCustomizerItem, isAuthModalOpen]);
+  }, [isCartOpen, activeCustomizerItem, isAuthModalOpen, isProfileModalOpen, isOrdersModalOpen]);
+
+  // Sync States to localStorage for Magic Link retention
+  useEffect(() => {
+    localStorage.setItem('danny-m-cart', JSON.stringify(cart));
+  }, [cart]);
+
+  useEffect(() => {
+    localStorage.setItem('danny-m-customer-name', customerName);
+  }, [customerName]);
+
+  useEffect(() => {
+    localStorage.setItem('danny-m-customer-phone', customerPhone);
+  }, [customerPhone]);
+
+  useEffect(() => {
+    localStorage.setItem('danny-m-customer-email', customerEmail);
+  }, [customerEmail]);
+
+  useEffect(() => {
+    localStorage.setItem('danny-m-delivery-address', deliveryAddress);
+  }, [deliveryAddress]);
+
+  useEffect(() => {
+    localStorage.setItem('danny-m-notes', notes);
+  }, [notes]);
 
   // Fetch Menu from Next.js CMS API
   useEffect(() => {
@@ -208,6 +418,115 @@ const App: React.FC = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Pre-fill checkout fields from Supabase Auth user metadata
+  useEffect(() => {
+    if (!user) return;
+    if (user.user_metadata) {
+      if (user.user_metadata.full_name && !customerName) {
+        setCustomerName(user.user_metadata.full_name);
+      }
+      if (user.user_metadata.phone && !customerPhone) {
+        setCustomerPhone(user.user_metadata.phone);
+      }
+      if (user.user_metadata.delivery_address && !deliveryAddress) {
+        setDeliveryAddress(user.user_metadata.delivery_address);
+      }
+    }
+    if (user.email && !customerEmail) {
+      setCustomerEmail(user.email);
+    }
+  }, [user]);
+
+  // Reconcile Yoco Hosted Checkout Redirect Callback States (Success & Cancel)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const yocoSuccess = params.get('yoco_success');
+    const yocoCancel = params.get('yoco_cancel');
+
+    if (yocoSuccess === 'true') {
+      const settleOrder = async () => {
+        try {
+          const pendingStr = localStorage.getItem('danny-m-pending-order');
+          if (!pendingStr) {
+            console.warn('No pending order payload found in localStorage.');
+            return;
+          }
+          const pending = JSON.parse(pendingStr);
+
+          // Get active authenticated user session securely
+          const { data: { session } } = await supabase.auth.getSession();
+          const activeUser = session?.user;
+          if (!activeUser) {
+            alert('Authentication lost. Please sign in to finalize your order.');
+            setIsAuthModalOpen(true);
+            return;
+          }
+
+          setIsSubmitting(true);
+          setOrderError(null);
+
+          // 1. Submit order to Supabase orders table
+          const { error: dbError } = await supabase.from('orders').insert({
+            user_id: activeUser.id,
+            total: pending.total,
+            notes: pending.notes || null,
+            items: pending.supabaseItems
+          });
+
+          if (dbError) {
+            console.error('Supabase DB Sync Error during reconciliation:', dbError);
+            throw new Error(dbError.message || 'Failed to sync order to Supabase database.');
+          }
+
+          // 2. Post order to CMS / Turso database
+          const res = await fetch(`${CMS_URL}/api/orders`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(pending.cmsPayload)
+          });
+
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.error || 'Failed to submit order to CMS.');
+          }
+
+          const orderData = await res.json();
+          if (orderData && orderData.id) {
+            localStorage.setItem('danny-m-active-order-id', orderData.id);
+            setActiveOrderId(orderData.id);
+            setCartSidebarTab('tracker');
+          }
+
+          // Finalize Success State
+          setOrderSuccess(true);
+          setIsCartOpen(true); // Open cart to show success medallions
+          setCart({}); // flush active cart
+          setCustomerName('');
+          setCustomerPhone('');
+          setCustomerEmail('');
+          setDeliveryAddress('');
+          setNotes('');
+          localStorage.removeItem('danny-m-pending-order');
+        } catch (err: any) {
+          console.error('Order Settlement Error:', err);
+          alert('Saved locally. Order settlement failed: ' + err.message);
+        } finally {
+          setIsSubmitting(false);
+          // Clean URL params to avoid re-triggering on reload
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      };
+
+      settleOrder();
+    } else if (yocoCancel === 'true') {
+      alert('Payment was cancelled on the Yoco secure checkout page. Feel free to review your traditional plate and try again.');
+      setIsCartOpen(true);
+      setCartStep('checkout');
+      // Clean URL params
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [user, categories]);
 
   // Poll Order Status from Next.js CMS API
   useEffect(() => {
@@ -393,8 +712,9 @@ const App: React.FC = () => {
       };
     });
 
-    setActiveCustomizerItem(null);
-    setIsCartOpen(true);
+    handleCloseCustomizer(() => {
+      setIsCartOpen(true);
+    });
   };
 
   // Submitting Order to the CMS API
@@ -405,15 +725,18 @@ const App: React.FC = () => {
       return;
     }
     if (!customerName.trim()) {
-      alert("Please enter your name to complete the order.");
+      triggerFieldShake('name');
+      setOrderError("Please enter your name to complete the order.");
       return;
     }
     if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
-      alert("Please enter a valid email address (e.g. name@example.com).");
+      triggerFieldShake('email');
+      setOrderError("Please enter a valid email address (e.g. name@example.com).");
       return;
     }
     if (serviceMode === 'Delivery' && !deliveryAddress.trim()) {
-      alert("Please specify your delivery address.");
+      triggerFieldShake('deliveryAddress');
+      setOrderError("Please specify your delivery address.");
       return;
     }
     const cartEntries = Object.values(cart);
@@ -458,87 +781,43 @@ const App: React.FC = () => {
         }))
       };
 
-      // @ts-ignore
-      var yoco = new window.YocoSDK({
-        publicKey: 'pk_test_ed3c54a6gOol69qa7f45', // Test key
-      });
+      // Serialize entire checkout parameters & database payload into localStorage for post-redirect reconciliation
+      const pendingOrderPayload = {
+        total: totalCartPrice,
+        notes: finalNotes || null,
+        supabaseItems: cartEntries.map(entry => ({
+          menuItemId: entry.item.id,
+          name: entry.item.name,
+          quantity: entry.quantity,
+          priceAtTime: getItemPrice(entry),
+          selectedStarch: entry.selectedStarch || null,
+          selectedSalad: entry.selectedSalad || null,
+          selectedVeggie: entry.selectedVeggie || null,
+          selectedExtras: entry.selectedExtras || [],
+          selectedBeverages: entry.selectedBeverages || []
+        })),
+        cmsPayload: payload
+      };
+      localStorage.setItem('danny-m-pending-order', JSON.stringify(pendingOrderPayload));
 
-      yoco.showPopup({
-        amountInCents: totalCartPrice * 100,
-        currency: 'ZAR',
-        name: 'Danny M Restaurant',
-        description: 'Authentic African Cuisine',
-        callback: async function (result: any) {
-          if (result.error) {
-            setOrderError(result.error.message);
-            setIsSubmitting(false);
-          } else {
-            try {
-              // Call our Edge Function
-              const { error: yocoError } = await supabase.functions.invoke('process-yoco-payment', {
-                body: { token: result.id, amountInCents: totalCartPrice * 100 }
-              });
-
-              if (yocoError) throw yocoError;
-
-              // Dual-sync step 1: Insert into Supabase orders table
-              const { error: dbError } = await supabase.from('orders').insert({
-                user_id: user.id,
-                total: totalCartPrice,
-                notes: finalNotes || null,
-                items: cartEntries.map(entry => ({
-                  menuItemId: entry.item.id,
-                  name: entry.item.name,
-                  quantity: entry.quantity,
-                  priceAtTime: getItemPrice(entry),
-                  selectedStarch: entry.selectedStarch,
-                  selectedSalad: entry.selectedSalad,
-                  selectedVeggie: entry.selectedVeggie,
-                  selectedExtras: entry.selectedExtras,
-                  selectedBeverages: entry.selectedBeverages
-                }))
-              });
-
-              if (dbError) {
-                console.error('Supabase DB Sync Error:', dbError);
-                throw new Error(dbError.message || 'Failed to sync order to Supabase database.');
-              }
-
-              // Dual-sync step 2: Post to existing CMS / Turso database
-              const res = await fetch(`${CMS_URL}/api/orders`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-              });
-
-              if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.error || 'Failed to submit order to CMS.');
-              }
-
-              const orderData = await res.json();
-              if (orderData && orderData.id) {
-                localStorage.setItem('danny-m-active-order-id', orderData.id);
-                setActiveOrderId(orderData.id);
-                setCartSidebarTab('tracker');
-              }
-
-              setOrderSuccess(true);
-              setCart({}); // clear cart
-              setCustomerName('');
-              setCustomerPhone('');
-              setCustomerEmail('');
-              setDeliveryAddress('');
-              setNotes('');
-            } catch (err: any) {
-              console.error('Order Submission Error:', err);
-              setOrderError(err.message || 'Failed to finalize order. Please contact support.');
-            } finally {
-              setIsSubmitting(false);
-            }
-          }
+      // Call our Edge Function to initiate Yoco Hosted Checkout
+      const { data, error: yocoError } = await supabase.functions.invoke('process-yoco-payment', {
+        body: {
+          amountInCents: totalCartPrice * 100,
+          currency: 'ZAR',
+          successUrl: `${window.location.origin}/?yoco_success=true`,
+          cancelUrl: `${window.location.origin}/?yoco_cancel=true`
         }
       });
+
+      if (yocoError) throw yocoError;
+
+      if (data && data.redirectUrl) {
+        // Redirect to Yoco secure checkout page
+        window.location.href = data.redirectUrl;
+      } else {
+        throw new Error('Yoco hosted checkout did not return a valid redirection URL.');
+      }
     } catch (err: any) {
       console.error('Order Initialization Error:', err);
       setOrderError(err.message || 'Failed to initialize payment.');
@@ -646,18 +925,36 @@ const App: React.FC = () => {
                   <span className="block text-xs text-white/50 uppercase tracking-widest font-black">Logged in as</span>
                   <span className="block text-sm font-bold text-white mt-1 truncate">{user?.email || 'user@example.com'}</span>
                 </div>
-                <button className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 rounded-xl text-sm font-bold transition-colors">
+                <button 
+                  onClick={() => {
+                    setIsProfileModalOpen(true);
+                    handleProfileToggle();
+                  }}
+                  className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 rounded-xl text-sm font-bold transition-colors cursor-pointer"
+                >
                   <User className="w-4 h-4 text-primary-light" /> My Profile
                 </button>
-                <button className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 rounded-xl text-sm font-bold transition-colors">
+                <button 
+                  onClick={() => {
+                    setIsOrdersModalOpen(true);
+                    handleProfileToggle();
+                  }}
+                  className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 rounded-xl text-sm font-bold transition-colors cursor-pointer"
+                >
                   <Utensils className="w-4 h-4 text-primary-light" /> Past Orders
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    await supabase.auth.signOut();
                     setUser(null);
+                    setCustomerName('');
+                    setCustomerPhone('');
+                    setCustomerEmail('');
+                    setDeliveryAddress('');
+                    setNotes('');
                     handleProfileToggle();
                   }}
-                  className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-red-500/10 text-red-400 rounded-xl text-sm font-bold transition-colors mt-1"
+                  className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-red-500/10 text-red-400 rounded-xl text-sm font-bold transition-colors mt-1 cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" /> Sign Out
                 </button>
@@ -1268,8 +1565,8 @@ const App: React.FC = () => {
       </footer>
 
       {/* PREMIUM MODAL CART */}
-      <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/75 backdrop-blur-md transition-opacity duration-300 ${isCartOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-        <div className={`relative bg-bg-card/98 border border-white/10 rounded-[2.5rem] w-full max-w-5xl h-[85vh] md:h-[80vh] flex flex-col justify-between shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl transition-transform duration-500 transform ${isCartOpen ? 'scale-100' : 'scale-95'} overflow-hidden`}>
+      <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/75 backdrop-blur-md transition-opacity duration-300 ${isCartOpen && !isCartClosing ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+        <div className={`relative bg-bg-card/98 border border-white/10 rounded-[2.5rem] w-full max-w-5xl h-[85vh] md:h-[80vh] flex flex-col justify-between shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl t-modal ${isCartOpen && !isCartClosing ? 'is-open' : ''} ${isCartClosing ? 'is-closing' : ''} overflow-hidden`}>
           {/* Header */}
           <div className="p-6 border-b border-white/5 flex justify-between items-center bg-bg-dark/30">
             {activeOrderId ? (
@@ -1308,7 +1605,7 @@ const App: React.FC = () => {
               </div>
             )}
             <button
-              onClick={() => setIsCartOpen(false)}
+              onClick={handleCloseCart}
               className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               aria-label="Close cart"
             >
@@ -1496,7 +1793,7 @@ const App: React.FC = () => {
                 {/* Back button */}
                 {activeOrderData?.status !== 'Completed' && activeOrderData?.status !== 'Cancelled' && (
                   <button
-                    onClick={() => setIsCartOpen(false)}
+                    onClick={handleCloseCart}
                     className="w-full py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-full text-[10px] tracking-widest uppercase transition-all cursor-pointer text-center flex items-center justify-center gap-2"
                   >
                     <Clock className="w-3.5 h-3.5 text-white/60" />
@@ -1524,7 +1821,7 @@ const App: React.FC = () => {
                 <button
                   onClick={() => {
                     setOrderSuccess(false);
-                    setIsCartOpen(false);
+                    handleCloseCart();
                   }}
                   className="mt-4 px-8 py-3 bg-primary hover:bg-primary-light text-white font-bold rounded-full text-xs tracking-widest uppercase transition-all cursor-pointer"
                 >
@@ -1540,7 +1837,7 @@ const App: React.FC = () => {
                   Add some of our slow-cooked Pretoria traditional meals to customize your perfect plate.
                 </p>
                 <button
-                  onClick={() => setIsCartOpen(false)}
+                  onClick={handleCloseCart}
                   className="mt-2 px-6 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-full text-[10px] tracking-widest uppercase transition-all cursor-pointer"
                 >
                   Start Adding meals
@@ -1722,71 +2019,38 @@ const App: React.FC = () => {
                             required
                             placeholder="Your Name (Required)*"
                             value={customerName}
-                            onChange={(e) => setCustomerName(e.target.value)}
-                            className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
+                            onChange={handleNameChange}
+                            className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.name ? 'is-error' : ''} ${fieldShaking.name ? 'is-shaking' : ''}`}
                           />
 
                           <input
                             type="tel"
                             placeholder="Phone Number (Highly Recommended)"
                             value={customerPhone}
-                            onChange={(e) => setCustomerPhone(e.target.value)}
-                            className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
+                            onChange={handlePhoneChange}
+                            className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.phone ? 'is-error' : ''} ${fieldShaking.phone ? 'is-shaking' : ''}`}
                           />
 
                           <input
                             type="email"
                             placeholder="Email Address (For order updates)"
                             value={customerEmail}
-                            onChange={(e) => setCustomerEmail(e.target.value)}
-                            className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
+                            onChange={handleEmailChange}
+                            className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.email ? 'is-error' : ''} ${fieldShaking.email ? 'is-shaking' : ''}`}
                           />
-
-                          {/* Service Mode Toggles */}
-                          <div className="grid grid-cols-2 gap-2 bg-[#0d0b0a] p-1 rounded-xl border border-white/5 shadow-inner">
-                            <button
-                              type="button"
-                              onClick={() => setServiceMode('Pickup')}
-                              className={`py-2 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${serviceMode === 'Pickup'
-                                ? 'bg-primary text-white shadow-md'
-                                : 'text-white/50 hover:text-white'
-                                }`}
-                            >
-                              <Car className="w-3.5 h-3.5" />
-                              <span>Pickup</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setServiceMode('Delivery')}
-                              className={`py-2 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${serviceMode === 'Delivery'
-                                ? 'bg-primary text-white shadow-md'
-                                : 'text-white/50 hover:text-white'
-                                }`}
-                            >
-                              <Bike className="w-3.5 h-3.5" />
-                              <span>Delivery</span>
-                            </button>
-                          </div>
-
-                          {/* Delivery Address Input */}
-                          {serviceMode === 'Delivery' && (
-                            <input
-                              type="text"
-                              required
-                              placeholder="Delivery Address (Required)*"
-                              value={deliveryAddress}
-                              onChange={(e) => setDeliveryAddress(e.target.value)}
-                              className="w-full bg-[#151211] border border-white/5 hover:border-primary focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white animate-pulse-slow"
-                            />
-                          )}
 
                           <input
                             type="text"
                             placeholder="Special instructions (e.g. Extra Gravy)"
                             value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
+                            onChange={handleNotesChange}
+                            className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.notes ? 'is-error' : ''} ${fieldShaking.notes ? 'is-shaking' : ''}`}
                           />
+                        </div>
+
+                        {/* Pickup notice */}
+                        <div className="bg-[#1c1513] border border-primary/20 rounded-xl p-3 text-center text-[10px] text-primary-light font-black tracking-widest uppercase mb-1 animate-pulse-slow">
+                          ●  Pickup Order
                         </div>
 
                         {/* Glowing Submit Button */}
@@ -1995,69 +2259,38 @@ const App: React.FC = () => {
                               required
                               placeholder="Your Name (Required)*"
                               value={customerName}
-                              onChange={(e) => setCustomerName(e.target.value)}
-                              className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
+                              onChange={handleNameChange}
+                              className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.name ? 'is-error' : ''} ${fieldShaking.name ? 'is-shaking' : ''}`}
                             />
 
                             <input
                               type="tel"
                               placeholder="Phone Number (Highly Recommended)"
                               value={customerPhone}
-                              onChange={(e) => setCustomerPhone(e.target.value)}
-                              className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
+                              onChange={handlePhoneChange}
+                              className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.phone ? 'is-error' : ''} ${fieldShaking.phone ? 'is-shaking' : ''}`}
                             />
 
                             <input
                               type="email"
                               placeholder="Email Address (For order updates)"
                               value={customerEmail}
-                              onChange={(e) => setCustomerEmail(e.target.value)}
-                              className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
+                              onChange={handleEmailChange}
+                              className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.email ? 'is-error' : ''} ${fieldShaking.email ? 'is-shaking' : ''}`}
                             />
-
-                            <div className="grid grid-cols-2 gap-2 bg-[#0d0b0a] p-1 rounded-xl border border-white/5 shadow-inner">
-                              <button
-                                type="button"
-                                onClick={() => setServiceMode('Pickup')}
-                                className={`py-2 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${serviceMode === 'Pickup'
-                                  ? 'bg-primary text-white shadow-md'
-                                  : 'text-white/50 hover:text-white'
-                                  }`}
-                              >
-                                <Car className="w-3.5 h-3.5" />
-                                <span>Pickup</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setServiceMode('Delivery')}
-                                className={`py-2 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${serviceMode === 'Delivery'
-                                  ? 'bg-primary text-white shadow-md'
-                                  : 'text-white/50 hover:text-white'
-                                  }`}
-                              >
-                                <Bike className="w-3.5 h-3.5" />
-                                <span>Delivery</span>
-                              </button>
-                            </div>
-
-                            {serviceMode === 'Delivery' && (
-                              <input
-                                type="text"
-                                required
-                                placeholder="Delivery Address (Required)*"
-                                value={deliveryAddress}
-                                onChange={(e) => setDeliveryAddress(e.target.value)}
-                                className="w-full bg-[#151211] border border-white/5 hover:border-primary focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
-                              />
-                            )}
 
                             <input
                               type="text"
                               placeholder="Special instructions (e.g. Extra Gravy)"
                               value={notes}
-                              onChange={(e) => setNotes(e.target.value)}
-                              className="w-full bg-[#151211] border border-white/5 hover:border-white/15 focus:border-primary focus:outline-none rounded-xl px-4 py-3 text-xs text-white"
+                              onChange={handleNotesChange}
+                              className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.notes ? 'is-error' : ''} ${fieldShaking.notes ? 'is-shaking' : ''}`}
                             />
+                          </div>
+
+                          {/* Pickup notice */}
+                          <div className="bg-[#1c1513] border border-primary/20 rounded-xl p-3 text-center text-[10px] text-primary-light font-black tracking-widest uppercase mb-4 mt-2 animate-pulse-slow">
+                            ● Pickup Order
                           </div>
 
                           <button
@@ -2086,276 +2319,512 @@ const App: React.FC = () => {
           </div>
         </div>
       </div>
-      {/* PREMIUM CUSTOMIZER DIALOG MODAL */ }
-  {
-    activeCustomizerItem && (() => {
-      const item = activeCustomizerItem;
-      const starches = item.primaryStarchOptions ? JSON.parse(item.primaryStarchOptions) : [];
-      const salads = item.complementarySaladOptions ? JSON.parse(item.complementarySaladOptions) : [];
-      const veggies = item.sideVeggieOptions ? JSON.parse(item.sideVeggieOptions) : [];
-      const extrasList = item.addOnSides ? JSON.parse(item.addOnSides) : [];
-      const beveragesList = item.beverages ? JSON.parse(item.beverages) : [];
+      {/* PREMIUM CUSTOMIZER DIALOG MODAL */}
+      {
+        activeCustomizerItem && (() => {
+          const item = activeCustomizerItem;
+          const starches = item.primaryStarchOptions ? JSON.parse(item.primaryStarchOptions) : [];
+          const salads = item.complementarySaladOptions ? JSON.parse(item.complementarySaladOptions) : [];
+          const veggies = item.sideVeggieOptions ? JSON.parse(item.sideVeggieOptions) : [];
+          const extrasList = item.addOnSides ? JSON.parse(item.addOnSides) : [];
+          const beveragesList = item.beverages ? JSON.parse(item.beverages) : [];
 
-      // Calculate active item cost dynamically inside the modal
-      let runningPrice = item.price;
-      extrasList.forEach((extra: any) => {
-        if (customExtras[extra.name]) {
-          runningPrice += parseExtraPrice(extra.price);
-        }
-      });
-      beveragesList.forEach((bev: any) => {
-        if (customBeverages[bev.name]) {
-          runningPrice += parseExtraPrice(bev.price);
-        }
-      });
+          // Calculate active item cost dynamically inside the modal
+          let runningPrice = item.price;
+          extrasList.forEach((extra: any) => {
+            if (customExtras[extra.name]) {
+              runningPrice += parseExtraPrice(extra.price);
+            }
+          });
+          beveragesList.forEach((bev: any) => {
+            if (customBeverages[bev.name]) {
+              runningPrice += parseExtraPrice(bev.price);
+            }
+          });
 
-      return (
+          return (
+            <>
+              {/* Backdrop */}
+              <div
+                className={`fixed inset-0 z-50 bg-black/75 backdrop-blur-sm transition-opacity duration-300 ${!isCustomizerClosing ? 'opacity-100' : 'opacity-0'}`}
+                onClick={() => handleCloseCustomizer()}
+              />
+              {/* Modal */}
+              <div className={`fixed inset-x-4 bottom-4 top-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[680px] md:max-h-[90vh] z-50 bg-bg-card/98 border border-white/10 rounded-[2.5rem] shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl overflow-hidden flex flex-col justify-between t-modal ${!isCustomizerClosing ? 'is-open' : 'is-closing'}`}>
+
+                {/* Header with warm styling */}
+                <div className="p-6 border-b border-white/5 flex justify-between items-center bg-bg-dark/30 flex-shrink-0">
+                  <div className="flex items-center gap-3">
+                    <ChefHat className="w-6 h-6 text-primary-light" />
+                    <div>
+                      <h3 className="font-heading text-lg font-extrabold text-white tracking-tight uppercase">Customize {item.name}</h3>
+                      <p className="text-[10px] text-primary-light font-black tracking-widest uppercase mt-0.5">Craft Your Perfect Plate</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleCloseCustomizer()}
+                    className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                    aria-label="Close customizer"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Scrollable Customization Fields */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
+                  {/* Hero Dish Showcase */}
+                  <div className="flex flex-col sm:flex-row items-center gap-6 bg-bg-dark/40 border border-white/5 rounded-3xl p-5 shadow-inner">
+                    {item.image && item.image !== 'null' && item.image !== '' && (
+                      <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary bg-bg-dark shadow-[0_10px_25px_rgba(0,0,0,0.5)] flex-shrink-0">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="text-center sm:text-left space-y-1.5">
+                      <h4 className="font-heading text-lg font-bold text-white uppercase tracking-tight">{item.name}</h4>
+                      <p className="text-white/60 text-xs leading-relaxed max-w-md">
+                        {item.description || "Freshly cooked traditional South African delight prepared with clean ingredients."}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Starches */}
+                  {starches.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase">Choice of Starch</span>
+                        <span className="text-[9px] bg-primary/20 text-primary-light border border-primary/20 px-2 py-0.5 rounded-full font-black uppercase">Required</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {starches.map((starch: string) => (
+                          <button
+                            key={starch}
+                            type="button"
+                            onClick={() => setCustomStarch(starch)}
+                            className={`p-3 rounded-2xl border text-center text-xs font-bold transition-all cursor-pointer ${customStarch === starch
+                              ? 'bg-primary/25 border-primary text-white shadow-md'
+                              : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
+                              }`}
+                          >
+                            {starch}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Salads */}
+                  {salads.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase">Choice of Salad</span>
+                        <span className="text-[9px] bg-primary/20 text-primary-light border border-primary/20 px-2 py-0.5 rounded-full font-black uppercase">Required</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {salads.map((salad: string) => (
+                          <button
+                            key={salad}
+                            type="button"
+                            onClick={() => setCustomSalad(salad)}
+                            className={`p-3 rounded-2xl border text-center text-xs font-bold transition-all cursor-pointer ${customSalad === salad
+                              ? 'bg-primary/25 border-primary text-white shadow-md'
+                              : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
+                              }`}
+                          >
+                            {salad}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Side Veggies */}
+                  {veggies.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase">Choice of Side Veggie</span>
+                        <span className="text-[9px] bg-primary/20 text-primary-light border border-primary/20 px-2 py-0.5 rounded-full font-black uppercase">Required</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {veggies.map((veg: string) => (
+                          <button
+                            key={veg}
+                            type="button"
+                            onClick={() => setCustomVeggie(veg)}
+                            className={`p-3 rounded-2xl border text-center text-xs font-bold transition-all cursor-pointer ${customVeggie === veg
+                              ? 'bg-primary/25 border-primary text-white shadow-md'
+                              : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
+                              }`}
+                          >
+                            {veg}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Added Extras */}
+                  {extrasList.length > 0 && (
+                    <div className="space-y-3">
+                      <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block">Add Extras</span>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        {extrasList.map((extra: any) => {
+                          const isChecked = !!customExtras[extra.name];
+                          const price = parseExtraPrice(extra.price);
+                          return (
+                            <button
+                              key={extra.name}
+                              type="button"
+                              onClick={() => setCustomExtras(prev => ({ ...prev, [extra.name]: !isChecked }))}
+                              className={`p-4 rounded-2xl border text-left text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${isChecked
+                                ? 'bg-primary/20 border-primary text-white shadow-md'
+                                : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
+                                }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isChecked ? 'bg-primary border-primary text-white' : 'border-white/20'}`}>
+                                  {isChecked && <Check className="w-3 h-3 text-white" />}
+                                </div>
+                                <span>{extra.name}</span>
+                              </div>
+                              <span className="text-primary-light font-black">+ R {price.toFixed(2)}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Beverages */}
+                  {beveragesList.length > 0 && (
+                    <div className="space-y-3">
+                      <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block">Select Beverage</span>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        {beveragesList.map((bev: any) => {
+                          const isChecked = !!customBeverages[bev.name];
+                          const price = parseExtraPrice(bev.price);
+                          return (
+                            <button
+                              key={bev.name}
+                              type="button"
+                              onClick={() => setCustomBeverages(prev => ({ ...prev, [bev.name]: !isChecked }))}
+                              className={`p-4 rounded-2xl border text-left text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${isChecked
+                                ? 'bg-primary/20 border-primary text-white shadow-md'
+                                : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
+                                }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isChecked ? 'bg-primary border-primary text-white' : 'border-white/20'}`}>
+                                  {isChecked && <Check className="w-3 h-3 text-white" />}
+                                </div>
+                                <span>{bev.name}</span>
+                              </div>
+                              <span className="text-primary-light font-black">+ R {price.toFixed(2)}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+
+                {/* Dynamic Compound Cost & Add to Plate button */}
+                <div className="border-t border-white/10 bg-bg-dark/65 backdrop-blur-md p-6 flex flex-col sm:flex-row justify-between items-center gap-4 flex-shrink-0">
+                  <div className="text-center sm:text-left">
+                    <span className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Compound Cost</span>
+                    <span className="text-2xl font-black text-primary-light">R {runningPrice.toFixed(2)}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleConfirmCustomization}
+                    className="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primary-light text-white font-extrabold rounded-full text-xs tracking-widest uppercase transition-all cursor-pointer shadow-lg shadow-primary/20 hover:shadow-primary/45 border border-primary-light/20 flex items-center justify-center gap-2"
+                  >
+                    <span>Confirm & Add to Plate</span> <Flame className="w-4 h-4" />
+                  </button>
+                </div>
+
+              </div>
+            </>
+          );
+        })()
+      }
+
+      {/* Backdrop overlay */}
+      {
+        isCartOpen && (
+          <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-500" onClick={() => setIsCartOpen(false)} />
+        )
+      }
+
+      {/* Active Order Floating Tracker Badge */}
+      {
+        activeOrderId && activeOrderData && !isCartOpen && (
+          <div className="fixed bottom-6 left-6 z-50 animate-fade-in">
+            <button
+              onClick={() => {
+                setCartSidebarTab('tracker');
+                setIsCartOpen(true);
+              }}
+              className="flex items-center gap-3 bg-bg-card/90 border border-primary/20 hover:border-primary text-white px-5 py-3 rounded-full shadow-[0_10px_30px_rgba(217,93,46,0.2)] hover:shadow-[0_10px_35px_rgba(217,93,46,0.35)] backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 group cursor-pointer relative"
+            >
+              {/* Pulsating glowing ember dot */}
+              <span className="relative flex h-2 w-2">
+                {['Received', 'Preparing', 'Ready'].includes(activeOrderData.status) && (
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                )}
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+              </span>
+              <span className="text-[10px] font-black tracking-widest uppercase text-white/90 flex items-center justify-center gap-1.5">
+                <span>Track order:</span> <span className="text-primary-light">{activeOrderData.status}</span> <ChefHat className="w-3.5 h-3.5 text-primary-light inline" />
+              </span>
+            </button>
+          </div>
+        )
+      }
+
+      {/* 1. MY PROFILE MODAL */}
+      {isProfileModalOpen && (
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm transition-opacity duration-300"
-            onClick={() => setActiveCustomizerItem(null)}
+            className={`fixed inset-0 z-50 bg-black/75 backdrop-blur-sm transition-opacity duration-300 ${!isProfileModalClosing ? 'opacity-100' : 'opacity-0'}`}
+            onClick={handleCloseProfileModal}
           />
-          {/* Modal */}
-          <div className="fixed inset-x-4 bottom-4 top-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[680px] md:max-h-[90vh] z-50 bg-bg-card/98 border border-white/10 rounded-[2.5rem] shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl overflow-hidden flex flex-col justify-between animate-fade-in">
-
-            {/* Header with warm styling */}
+          {/* Modal Card */}
+          <div className={`fixed inset-x-4 bottom-4 top-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[500px] md:max-h-[90vh] z-50 bg-bg-card/98 border border-white/10 rounded-[2.5rem] shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl overflow-hidden flex flex-col justify-between t-modal ${!isProfileModalClosing ? 'is-open' : 'is-closing'}`}>
+            
+            {/* Header */}
             <div className="p-6 border-b border-white/5 flex justify-between items-center bg-bg-dark/30 flex-shrink-0">
               <div className="flex items-center gap-3">
-                <ChefHat className="w-6 h-6 text-primary-light" />
+                <User className="w-6 h-6 text-primary-light" />
                 <div>
-                  <h3 className="font-heading text-lg font-extrabold text-white tracking-tight uppercase">Customize {item.name}</h3>
-                  <p className="text-[10px] text-primary-light font-black tracking-widest uppercase mt-0.5">Craft Your Perfect Plate</p>
+                  <h3 className="font-heading text-lg font-extrabold text-white tracking-tight uppercase">My Profile</h3>
+                  <p className="text-[10px] text-primary-light font-black tracking-widest uppercase mt-0.5">Ubuntu Hearth Account</p>
                 </div>
               </div>
               <button
-                onClick={() => setActiveCustomizerItem(null)}
+                onClick={handleCloseProfileModal}
                 className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                aria-label="Close customizer"
               >
                 ✕
               </button>
             </div>
 
-            {/* Scrollable Customization Fields */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-
-              {/* Hero Dish Showcase */}
-              <div className="flex flex-col sm:flex-row items-center gap-6 bg-bg-dark/40 border border-white/5 rounded-3xl p-5 shadow-inner">
-                {item.image && item.image !== 'null' && item.image !== '' && (
-                  <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary bg-bg-dark shadow-[0_10px_25px_rgba(0,0,0,0.5)] flex-shrink-0">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <div className="text-center sm:text-left space-y-1.5">
-                  <h4 className="font-heading text-lg font-bold text-white uppercase tracking-tight">{item.name}</h4>
-                  <p className="text-white/60 text-xs leading-relaxed max-w-md">
-                    {item.description || "Freshly cooked traditional South African delight prepared with clean ingredients."}
-                  </p>
-                </div>
+            {/* Scrollable Fields */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div className="space-y-1 bg-bg-dark/30 p-4 border border-white/5 rounded-2xl">
+                <span className="block text-[9px] uppercase tracking-wider text-white/40 font-bold">Email Address</span>
+                <span className="block text-sm text-white/90 font-bold font-mono">{user?.email || 'authenticated@user.com'}</span>
+                <span className="block text-[8px] uppercase tracking-widest text-primary-light/60 font-black mt-1">● Account managed securely via Supabase</span>
               </div>
 
-              {/* Starches */}
-              {starches.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase">Choice of Starch</span>
-                    <span className="text-[9px] bg-primary/20 text-primary-light border border-primary/20 px-2 py-0.5 rounded-full font-black uppercase">Required</span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {starches.map((starch: string) => (
-                      <button
-                        key={starch}
-                        type="button"
-                        onClick={() => setCustomStarch(starch)}
-                        className={`p-3 rounded-2xl border text-center text-xs font-bold transition-all cursor-pointer ${customStarch === starch
-                          ? 'bg-primary/25 border-primary text-white shadow-md'
-                          : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
-                          }`}
-                      >
-                        {starch}
-                      </button>
-                    ))}
-                  </div>
+              <div className="space-y-4 pt-2">
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-black tracking-widest text-white/50 uppercase">Full Name</label>
+                  <input
+                    type="text"
+                    placeholder="Enter your name"
+                    value={customerName}
+                    onChange={handleNameChange}
+                    className="w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3.5 text-xs text-white outline-none transition-all t-fire-input"
+                  />
                 </div>
-              )}
 
-              {/* Salads */}
-              {salads.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase">Choice of Salad</span>
-                    <span className="text-[9px] bg-primary/20 text-primary-light border border-primary/20 px-2 py-0.5 rounded-full font-black uppercase">Required</span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {salads.map((salad: string) => (
-                      <button
-                        key={salad}
-                        type="button"
-                        onClick={() => setCustomSalad(salad)}
-                        className={`p-3 rounded-2xl border text-center text-xs font-bold transition-all cursor-pointer ${customSalad === salad
-                          ? 'bg-primary/25 border-primary text-white shadow-md'
-                          : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
-                          }`}
-                      >
-                        {salad}
-                      </button>
-                    ))}
-                  </div>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-black tracking-widest text-white/50 uppercase">Phone Number</label>
+                  <input
+                    type="tel"
+                    placeholder="e.g. +27 82 123 4567"
+                    value={customerPhone}
+                    onChange={handlePhoneChange}
+                    className="w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3.5 text-xs text-white outline-none transition-all t-fire-input"
+                  />
                 </div>
-              )}
 
-              {/* Side Veggies */}
-              {veggies.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase">Choice of Side Veggie</span>
-                    <span className="text-[9px] bg-primary/20 text-primary-light border border-primary/20 px-2 py-0.5 rounded-full font-black uppercase">Required</span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {veggies.map((veg: string) => (
-                      <button
-                        key={veg}
-                        type="button"
-                        onClick={() => setCustomVeggie(veg)}
-                        className={`p-3 rounded-2xl border text-center text-xs font-bold transition-all cursor-pointer ${customVeggie === veg
-                          ? 'bg-primary/25 border-primary text-white shadow-md'
-                          : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
-                          }`}
-                      >
-                        {veg}
-                      </button>
-                    ))}
-                  </div>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-black tracking-widest text-white/50 uppercase">Delivery Address</label>
+                  <input
+                    type="text"
+                    placeholder="Street, Suburb, Pretoria"
+                    value={deliveryAddress}
+                    onChange={(e) => {
+                      setDeliveryAddress(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, deliveryAddress: false }));
+                      setFieldShaking(prev => ({ ...prev, deliveryAddress: false }));
+                    }}
+                    className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3.5 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.deliveryAddress ? 'is-error' : ''} ${fieldShaking.deliveryAddress ? 'is-shaking' : ''}`}
+                  />
                 </div>
-              )}
-
-              {/* Added Extras */}
-              {extrasList.length > 0 && (
-                <div className="space-y-3">
-                  <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block">Add Extras</span>
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    {extrasList.map((extra: any) => {
-                      const isChecked = !!customExtras[extra.name];
-                      const price = parseExtraPrice(extra.price);
-                      return (
-                        <button
-                          key={extra.name}
-                          type="button"
-                          onClick={() => setCustomExtras(prev => ({ ...prev, [extra.name]: !isChecked }))}
-                          className={`p-4 rounded-2xl border text-left text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${isChecked
-                            ? 'bg-primary/20 border-primary text-white shadow-md'
-                            : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
-                            }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isChecked ? 'bg-primary border-primary text-white' : 'border-white/20'}`}>
-                              {isChecked && <Check className="w-3 h-3 text-white" />}
-                            </div>
-                            <span>{extra.name}</span>
-                          </div>
-                          <span className="text-primary-light font-black">+ R {price.toFixed(2)}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Beverages */}
-              {beveragesList.length > 0 && (
-                <div className="space-y-3">
-                  <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block">Select Beverage</span>
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    {beveragesList.map((bev: any) => {
-                      const isChecked = !!customBeverages[bev.name];
-                      const price = parseExtraPrice(bev.price);
-                      return (
-                        <button
-                          key={bev.name}
-                          type="button"
-                          onClick={() => setCustomBeverages(prev => ({ ...prev, [bev.name]: !isChecked }))}
-                          className={`p-4 rounded-2xl border text-left text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${isChecked
-                            ? 'bg-primary/20 border-primary text-white shadow-md'
-                            : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
-                            }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isChecked ? 'bg-primary border-primary text-white' : 'border-white/20'}`}>
-                              {isChecked && <Check className="w-3 h-3 text-white" />}
-                            </div>
-                            <span>{bev.name}</span>
-                          </div>
-                          <span className="text-primary-light font-black">+ R {price.toFixed(2)}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
+              </div>
             </div>
 
-            {/* Dynamic Compound Cost & Add to Plate button */}
-            <div className="border-t border-white/10 bg-bg-dark/65 backdrop-blur-md p-6 flex flex-col sm:flex-row justify-between items-center gap-4 flex-shrink-0">
-              <div className="text-center sm:text-left">
-                <span className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Compound Cost</span>
-                <span className="text-2xl font-black text-primary-light">R {runningPrice.toFixed(2)}</span>
-              </div>
+            {/* Footer buttons */}
+            <div className="p-6 border-t border-white/5 bg-bg-dark/30 flex justify-between items-center gap-4 flex-shrink-0">
               <button
                 type="button"
-                onClick={handleConfirmCustomization}
-                className="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primary-light text-white font-extrabold rounded-full text-xs tracking-widest uppercase transition-all cursor-pointer shadow-lg shadow-primary/20 hover:shadow-primary/45 border border-primary-light/20 flex items-center justify-center gap-2"
+                onClick={handleCloseProfileModal}
+                className="px-6 py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-full text-[10px] tracking-widest uppercase transition-colors cursor-pointer"
               >
-                <span>Confirm & Add to Plate</span> <Flame className="w-4 h-4" />
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveProfile}
+                disabled={isSavingProfile}
+                className="px-8 py-3.5 bg-primary hover:bg-primary-light text-white font-extrabold rounded-full text-[10px] tracking-widest uppercase transition-all cursor-pointer shadow-lg shadow-primary/20 hover:shadow-primary/45 border border-primary-light/20 flex items-center justify-center gap-2"
+              >
+                {isSavingProfile ? 'Saving...' : 'Save Profile'} <Check className="w-3.5 h-3.5" />
               </button>
             </div>
 
           </div>
         </>
-      );
-    })()
-  }
+      )}
 
-  {/* Backdrop overlay */ }
-  {
-    isCartOpen && (
-      <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-500" onClick={() => setIsCartOpen(false)} />
-    )
-  }
+      {/* 2. PAST ORDERS MODAL */}
+      {isOrdersModalOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className={`fixed inset-0 z-50 bg-black/75 backdrop-blur-sm transition-opacity duration-300 ${!isOrdersModalClosing ? 'opacity-100' : 'opacity-0'}`}
+            onClick={handleCloseOrdersModal}
+          />
+          {/* Modal Card */}
+          <div className={`fixed inset-x-4 bottom-4 top-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[680px] md:max-h-[90vh] z-50 bg-bg-card/98 border border-white/10 rounded-[2.5rem] shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl overflow-hidden flex flex-col justify-between t-modal ${!isOrdersModalClosing ? 'is-open' : 'is-closing'}`}>
+            
+            {/* Header */}
+            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-bg-dark/30 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <Utensils className="w-6 h-6 text-primary-light" />
+                <div>
+                  <h3 className="font-heading text-lg font-extrabold text-white tracking-tight uppercase">Order History</h3>
+                  <p className="text-[10px] text-primary-light font-black tracking-widest uppercase mt-0.5">Your Authentic Pretoria Feasts</p>
+                </div>
+              </div>
+              <button
+                onClick={handleCloseOrdersModal}
+                className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
 
-  {/* Active Order Floating Tracker Badge */ }
-  {
-    activeOrderId && activeOrderData && !isCartOpen && (
-      <div className="fixed bottom-6 left-6 z-50 animate-fade-in">
-        <button
-          onClick={() => {
-            setCartSidebarTab('tracker');
-            setIsCartOpen(true);
-          }}
-          className="flex items-center gap-3 bg-bg-card/90 border border-primary/20 hover:border-primary text-white px-5 py-3 rounded-full shadow-[0_10px_30px_rgba(217,93,46,0.2)] hover:shadow-[0_10px_35px_rgba(217,93,46,0.35)] backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 group cursor-pointer relative"
-        >
-          {/* Pulsating glowing ember dot */}
-          <span className="relative flex h-2 w-2">
-            {['Received', 'Preparing', 'Ready'].includes(activeOrderData.status) && (
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-            )}
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-          </span>
-          <span className="text-[10px] font-black tracking-widest uppercase text-white/90 flex items-center justify-center gap-1.5">
-            <span>Track order:</span> <span className="text-primary-light">{activeOrderData.status}</span> <ChefHat className="w-3.5 h-3.5 text-primary-light inline" />
-          </span>
-        </button>
-      </div>
-    )
-  }
+            {/* Scrollable Orders List */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {loadingOrders ? (
+                <div className="flex flex-col items-center justify-center py-16 space-y-3">
+                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs text-white/40 uppercase tracking-widest font-black">Fetching Feast Logs...</span>
+                </div>
+              ) : pastOrders.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+                  <ShoppingBag className="w-12 h-12 text-white/10" />
+                  <h4 className="font-heading text-sm font-bold text-white uppercase tracking-tight">No Feasts Logged Yet</h4>
+                  <p className="text-[10px] text-white/40 max-w-xs leading-relaxed">
+                    You haven't ordered any delicious traditional plates under this account yet. Time to slow-cook some wonders!
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {pastOrders.map((order) => {
+                    const orderDate = new Date(order.created_at).toLocaleDateString('en-ZA', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    });
 
-  <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onSuccess={(user) => { setUser(user); setIsAuthModalOpen(false); }} />
-    </div >
+                    // Parse items array
+                    const items = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
+
+                    return (
+                      <div key={order.id} className="bg-bg-dark/45 border border-white/5 rounded-3xl p-5 space-y-4 shadow-inner relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(217,93,46,0.02)_0%,transparent_75%)] pointer-events-none" />
+                        
+                        {/* Header details */}
+                        <div className="flex justify-between items-start gap-4 flex-wrap pb-3 border-b border-white/5">
+                          <div className="space-y-0.5">
+                            <span className="block text-[10px] text-white/40 font-bold">{orderDate}</span>
+                            <span className="block text-[9px] uppercase tracking-wider text-primary-light font-black">ID: #{order.id.slice(0, 8)}</span>
+                          </div>
+                          
+                          {/* Dynamic Status Badge */}
+                          <div className={`px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase border ${
+                            order.status === 'Completed'
+                              ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                              : order.status === 'Cancelled'
+                                ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                                : order.status === 'Ready'
+                                  ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400 animate-pulse'
+                                  : 'bg-primary/10 border-primary/20 text-primary-light'
+                          }`}>
+                            {order.status}
+                          </div>
+                        </div>
+
+                        {/* Order Items List */}
+                        <div className="space-y-2.5">
+                          {items.map((it: any, idx: number) => (
+                            <div key={idx} className="flex justify-between items-start text-xs">
+                              <div className="min-w-0 pr-4">
+                                <span className="font-bold text-white uppercase">{it.name || `Meal item #${it.menuItemId}`}</span>
+                                <span className="text-[10px] text-white/50 block mt-0.5">
+                                  {[it.selectedStarch, it.selectedSalad, it.selectedVeggie].filter(Boolean).join(', ')}
+                                </span>
+                              </div>
+                              <span className="text-white/60 font-medium font-mono flex-shrink-0">
+                                {it.quantity}x <span className="text-[10px] text-white/30 font-bold">@ R{it.priceAtTime?.toFixed(2) || '0.00'}</span>
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Total & Reorder Button footer */}
+                        <div className="pt-3 border-t border-white/5 flex justify-between items-center flex-wrap gap-3">
+                          <div>
+                            <span className="text-[9px] uppercase tracking-wider text-white/35 font-bold block">Total Paid</span>
+                            <span className="text-sm font-black text-primary-light">R {order.total?.toFixed(2) || '0.00'}</span>
+                          </div>
+                          
+                          <button
+                            type="button"
+                            onClick={() => handleReorder(items)}
+                            className="flex items-center gap-1.5 px-4.5 py-2.5 bg-white/5 border border-white/10 hover:border-primary-light/30 hover:bg-primary/10 hover:text-primary-light text-white font-bold rounded-full text-[9px] tracking-widest uppercase transition-all cursor-pointer hover:scale-105 active:scale-95 animate-in fade-in"
+                          >
+                            <span>Reorder Feast</span> <Sparkles className="w-3.5 h-3.5 text-primary-light" />
+                          </button>
+                        </div>
+
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-white/5 bg-bg-dark/30 flex justify-end items-center flex-shrink-0">
+              <button
+                type="button"
+                onClick={handleCloseOrdersModal}
+                className="px-8 py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-full text-[10px] tracking-widest uppercase transition-colors cursor-pointer"
+              >
+                Close History
+              </button>
+            </div>
+
+          </div>
+        </>
+      )}
+
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onSuccess={(user) => { setUser(user); setIsAuthModalOpen(false); }} />
+    </div>
   );
 };
 
