@@ -20,9 +20,14 @@ import {
   ChefHat,
   UtensilsCrossed,
   ShoppingBag,
-  Info
+  Info,
+  User,
+  LogOut
 } from 'lucide-react';
 
+
+import { supabase } from './lib/supabase';
+import { AuthModal } from './components/AuthModal';
 
 interface MenuItem {
   id: string;
@@ -108,6 +113,23 @@ const App: React.FC = () => {
     setCartSidebarTab('cart');
   };
 
+  // Auth & Profile States
+  const [user, setUser] = useState<any | null>(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isProfileClosing, setIsProfileClosing] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  const handleProfileToggle = () => {
+    if (isProfileOpen) {
+      setIsProfileOpen(false);
+      setIsProfileClosing(true);
+      setTimeout(() => setIsProfileClosing(false), 150); // --dropdown-close-dur
+    } else {
+      setIsProfileClosing(false);
+      setIsProfileOpen(true);
+    }
+  };
+
   // Customizer Modal States
   const [activeCustomizerItem, setActiveCustomizerItem] = useState<MenuItem | null>(null);
   const [customStarch, setCustomStarch] = useState<string>('');
@@ -154,6 +176,19 @@ const App: React.FC = () => {
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Supabase Auth listener
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // Poll Order Status from Next.js CMS API
@@ -347,6 +382,10 @@ const App: React.FC = () => {
   // Submitting Order to the CMS API
   const handleCheckoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      setIsAuthModalOpen(true);
+      return;
+    }
     if (!customerName.trim()) {
       alert("Please enter your name to complete the order.");
       return;
@@ -401,37 +440,90 @@ const App: React.FC = () => {
         }))
       };
 
-      const res = await fetch(`${CMS_URL}/api/orders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
+      // @ts-ignore
+      var yoco = new window.YocoSDK({
+        publicKey: 'pk_test_ed3c54a6gOol69qa7f45', // Test key
       });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to submit order to CMS.');
-      }
+      yoco.showPopup({
+        amountInCents: totalCartPrice * 100,
+        currency: 'ZAR',
+        name: 'Danny M Restaurant',
+        description: 'Authentic African Cuisine',
+        callback: async function (result: any) {
+          if (result.error) {
+            setOrderError(result.error.message);
+            setIsSubmitting(false);
+          } else {
+            try {
+              // Call our Edge Function
+              const { error: yocoError } = await supabase.functions.invoke('process-yoco-payment', {
+                body: { token: result.id, amountInCents: totalCartPrice * 100 }
+              });
+              
+              if (yocoError) throw yocoError;
 
-      const orderData = await res.json();
-      if (orderData && orderData.id) {
-        localStorage.setItem('danny-m-active-order-id', orderData.id);
-        setActiveOrderId(orderData.id);
-        setCartSidebarTab('tracker');
-      }
+              // Dual-sync step 1: Insert into Supabase orders table
+              const { error: dbError } = await supabase.from('orders').insert({
+                user_id: user.id,
+                total: totalCartPrice,
+                notes: finalNotes || null,
+                items: cartEntries.map(entry => ({
+                  menuItemId: entry.item.id,
+                  name: entry.item.name,
+                  quantity: entry.quantity,
+                  priceAtTime: getItemPrice(entry),
+                  selectedStarch: entry.selectedStarch,
+                  selectedSalad: entry.selectedSalad,
+                  selectedVeggie: entry.selectedVeggie,
+                  selectedExtras: entry.selectedExtras,
+                  selectedBeverages: entry.selectedBeverages
+                }))
+              });
 
-      setOrderSuccess(true);
-      setCart({}); // clear cart
-      setCustomerName('');
-      setCustomerPhone('');
-      setCustomerEmail('');
-      setDeliveryAddress('');
-      setNotes('');
+              if (dbError) {
+                console.error('Supabase DB Sync Error:', dbError);
+                throw new Error(dbError.message || 'Failed to sync order to Supabase database.');
+              }
+
+              // Dual-sync step 2: Post to existing CMS / Turso database
+              const res = await fetch(`${CMS_URL}/api/orders`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+
+              if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to submit order to CMS.');
+              }
+
+              const orderData = await res.json();
+              if (orderData && orderData.id) {
+                localStorage.setItem('danny-m-active-order-id', orderData.id);
+                setActiveOrderId(orderData.id);
+                setCartSidebarTab('tracker');
+              }
+
+              setOrderSuccess(true);
+              setCart({}); // clear cart
+              setCustomerName('');
+              setCustomerPhone('');
+              setCustomerEmail('');
+              setDeliveryAddress('');
+              setNotes('');
+            } catch (err: any) {
+              console.error('Order Submission Error:', err);
+              setOrderError(err.message || 'Failed to finalize order. Please contact support.');
+            } finally {
+              setIsSubmitting(false);
+            }
+          }
+        }
+      });
     } catch (err: any) {
-      console.error('Order Submission Error:', err);
-      setOrderError(err.message || 'Failed to send order to CMS. Please try again.');
-    } finally {
+      console.error('Order Initialization Error:', err);
+      setOrderError(err.message || 'Failed to initialize payment.');
       setIsSubmitting(false);
     }
   };
@@ -485,8 +577,8 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-bg-light text-white/90 font-body selection:bg-primary selection:text-white overflow-x-hidden">
       {/* Sleek Dark Glassmorphism Navigation */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${isScrolled
-          ? 'bg-bg-dark/85 border-b border-white/5 backdrop-blur-xl py-4 shadow-2xl shadow-black/40 opacity-100 translate-y-0 pointer-events-auto'
-          : 'opacity-0 -translate-y-4 pointer-events-none'
+        ? 'bg-bg-dark/85 border-b border-white/5 backdrop-blur-xl py-4 shadow-2xl shadow-black/40 opacity-100 translate-y-0 pointer-events-auto'
+        : 'opacity-0 -translate-y-4 pointer-events-none'
         }`}>
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
           <a href="#" className="flex items-center gap-3 font-heading font-extrabold text-2xl tracking-tight hover:scale-102 transition-transform">
@@ -512,6 +604,48 @@ const App: React.FC = () => {
           </ul>
 
           <div className="flex items-center gap-4">
+            <div className="relative">
+              <button
+                onClick={() => {
+                  if (user) {
+                    handleProfileToggle();
+                  } else {
+                    setIsAuthModalOpen(true);
+                  }
+                }}
+                className="relative flex items-center justify-center w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-white/80 cursor-pointer"
+                aria-label="Profile"
+              >
+                <User className="w-5 h-5" />
+              </button>
+              
+              {/* Profile Dropdown using transitions-dev */}
+              <div 
+                className={`absolute top-[120%] right-0 w-56 bg-bg-card border border-white/10 shadow-2xl rounded-2xl p-2 t-dropdown ${isProfileOpen ? 'is-open' : ''} ${isProfileClosing ? 'is-closing' : ''}`} 
+                data-origin="top-right"
+              >
+                <div className="px-4 py-3 border-b border-white/10 mb-2">
+                  <span className="block text-xs text-white/50 uppercase tracking-widest font-black">Logged in as</span>
+                  <span className="block text-sm font-bold text-white mt-1 truncate">{user?.email || 'user@example.com'}</span>
+                </div>
+                <button className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 rounded-xl text-sm font-bold transition-colors">
+                  <User className="w-4 h-4 text-primary-light" /> My Profile
+                </button>
+                <button className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 rounded-xl text-sm font-bold transition-colors">
+                  <Utensils className="w-4 h-4 text-primary-light" /> Past Orders
+                </button>
+                <button 
+                  onClick={() => {
+                    setUser(null);
+                    handleProfileToggle();
+                  }}
+                  className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-red-500/10 text-red-400 rounded-xl text-sm font-bold transition-colors mt-1"
+                >
+                  <LogOut className="w-4 h-4" /> Sign Out
+                </button>
+              </div>
+            </div>
+
             <button
               onClick={() => {
                 setOrderSuccess(false);
@@ -826,8 +960,8 @@ const App: React.FC = () => {
                     key={idx}
                     onClick={() => setActiveTab(idx)}
                     className={`flex flex-col items-center justify-center py-4 px-2 rounded-xl transition-all duration-300 cursor-pointer ${activeTab === idx
-                        ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02] font-extrabold'
-                        : 'hover:bg-white/5 text-white/60 font-bold'
+                      ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02] font-extrabold'
+                      : 'hover:bg-white/5 text-white/60 font-bold'
                       }`}
                   >
                     <PillarIcon className="w-6 h-6 mb-1" />
@@ -905,8 +1039,8 @@ const App: React.FC = () => {
               <button
                 onClick={() => setSelectedCategoryId('all')}
                 className={`px-5 py-2.5 rounded-full font-black text-[10px] tracking-widest uppercase transition-all cursor-pointer ${selectedCategoryId === 'all'
-                    ? 'bg-primary text-white shadow-md'
-                    : 'text-white/60 hover:text-white'
+                  ? 'bg-primary text-white shadow-md'
+                  : 'text-white/60 hover:text-white'
                   }`}
               >
                 ● SHOW ALL
@@ -916,8 +1050,8 @@ const App: React.FC = () => {
                   key={category.id}
                   onClick={() => setSelectedCategoryId(category.id)}
                   className={`px-5 py-2.5 rounded-full font-black text-[10px] tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-2 ${selectedCategoryId === category.id
-                      ? 'bg-primary text-white shadow-md'
-                      : 'text-white/60 hover:text-white'
+                    ? 'bg-primary text-white shadow-md'
+                    : 'text-white/60 hover:text-white'
                     }`}
                 >
                   <UtensilsCrossed className="w-3.5 h-3.5" />
@@ -1126,8 +1260,8 @@ const App: React.FC = () => {
               <button
                 onClick={() => setCartSidebarTab('cart')}
                 className={`py-1.5 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1 ${cartSidebarTab === 'cart'
-                    ? 'bg-primary text-white shadow-md'
-                    : 'text-white/50 hover:text-white'
+                  ? 'bg-primary text-white shadow-md'
+                  : 'text-white/50 hover:text-white'
                   }`}
               >
                 <Utensils className="w-3.5 h-3.5" />
@@ -1136,8 +1270,8 @@ const App: React.FC = () => {
               <button
                 onClick={() => setCartSidebarTab('tracker')}
                 className={`py-1.5 px-4 rounded-lg font-black text-[9px] tracking-widest uppercase transition-all cursor-pointer flex items-center gap-1.5 relative ${cartSidebarTab === 'tracker'
-                    ? 'bg-primary text-white shadow-md'
-                    : 'text-white/50 hover:text-white'
+                  ? 'bg-primary text-white shadow-md'
+                  : 'text-white/50 hover:text-white'
                   }`}
               >
                 <Flame className="w-3.5 h-3.5 text-primary-light" />
@@ -1293,10 +1427,10 @@ const App: React.FC = () => {
 
                             {/* Circle Indicator */}
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold z-10 transition-all duration-500 border ${state === 'completed'
-                                ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20'
-                                : state === 'active'
-                                  ? 'bg-[#1c1513] border-primary text-white shadow-[0_0_20px_rgba(217,93,46,0.4)] animate-pulse'
-                                  : 'bg-[#151211] border-white/5 text-white/30'
+                              ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20'
+                              : state === 'active'
+                                ? 'bg-[#1c1513] border-primary text-white shadow-[0_0_20px_rgba(217,93,46,0.4)] animate-pulse'
+                                : 'bg-[#151211] border-white/5 text-white/30'
                               }`}>
                               {state === 'completed' ? (
                                 <Check className="w-5 h-5" />
@@ -1594,8 +1728,8 @@ const App: React.FC = () => {
                     type="button"
                     onClick={() => setServiceMode('Pickup')}
                     className={`py-2 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${serviceMode === 'Pickup'
-                        ? 'bg-primary text-white shadow-md'
-                        : 'text-white/50 hover:text-white'
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-white/50 hover:text-white'
                       }`}
                   >
                     <Car className="w-3.5 h-3.5" />
@@ -1605,8 +1739,8 @@ const App: React.FC = () => {
                     type="button"
                     onClick={() => setServiceMode('Delivery')}
                     className={`py-2 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${serviceMode === 'Delivery'
-                        ? 'bg-primary text-white shadow-md'
-                        : 'text-white/50 hover:text-white'
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-white/50 hover:text-white'
                       }`}
                   >
                     <Bike className="w-3.5 h-3.5" />
@@ -1743,8 +1877,8 @@ const App: React.FC = () => {
                           type="button"
                           onClick={() => setCustomStarch(starch)}
                           className={`p-3 rounded-2xl border text-center text-xs font-bold transition-all cursor-pointer ${customStarch === starch
-                              ? 'bg-primary/25 border-primary text-white shadow-md'
-                              : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
+                            ? 'bg-primary/25 border-primary text-white shadow-md'
+                            : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
                             }`}
                         >
                           {starch}
@@ -1768,8 +1902,8 @@ const App: React.FC = () => {
                           type="button"
                           onClick={() => setCustomSalad(salad)}
                           className={`p-3 rounded-2xl border text-center text-xs font-bold transition-all cursor-pointer ${customSalad === salad
-                              ? 'bg-primary/25 border-primary text-white shadow-md'
-                              : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
+                            ? 'bg-primary/25 border-primary text-white shadow-md'
+                            : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
                             }`}
                         >
                           {salad}
@@ -1793,8 +1927,8 @@ const App: React.FC = () => {
                           type="button"
                           onClick={() => setCustomVeggie(veg)}
                           className={`p-3 rounded-2xl border text-center text-xs font-bold transition-all cursor-pointer ${customVeggie === veg
-                              ? 'bg-primary/25 border-primary text-white shadow-md'
-                              : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
+                            ? 'bg-primary/25 border-primary text-white shadow-md'
+                            : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
                             }`}
                         >
                           {veg}
@@ -1818,8 +1952,8 @@ const App: React.FC = () => {
                             type="button"
                             onClick={() => setCustomExtras(prev => ({ ...prev, [extra.name]: !isChecked }))}
                             className={`p-4 rounded-2xl border text-left text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${isChecked
-                                ? 'bg-primary/20 border-primary text-white shadow-md'
-                                : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
+                              ? 'bg-primary/20 border-primary text-white shadow-md'
+                              : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
                               }`}
                           >
                             <div className="flex items-center gap-3">
@@ -1850,8 +1984,8 @@ const App: React.FC = () => {
                             type="button"
                             onClick={() => setCustomBeverages(prev => ({ ...prev, [bev.name]: !isChecked }))}
                             className={`p-4 rounded-2xl border text-left text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${isChecked
-                                ? 'bg-primary/20 border-primary text-white shadow-md'
-                                : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
+                              ? 'bg-primary/20 border-primary text-white shadow-md'
+                              : 'bg-bg-dark/50 border-white/5 text-white/60 hover:text-white hover:border-white/10'
                               }`}
                           >
                             <div className="flex items-center gap-3">
@@ -1918,6 +2052,8 @@ const App: React.FC = () => {
           </button>
         </div>
       )}
+
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onSuccess={(user) => { setUser(user); setIsAuthModalOpen(false); }} />
     </div>
   );
 };
