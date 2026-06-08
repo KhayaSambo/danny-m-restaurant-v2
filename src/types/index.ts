@@ -1,0 +1,72 @@
+export interface MenuItem {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  image: string | null;
+  stock: number;
+  isAvailable: boolean;
+  categoryId: string | null;
+  primaryStarchOptions?: string | null;
+  complementarySaladOptions?: string | null;
+  sideVeggieOptions?: string | null;
+  addOnSides?: string | null;
+  beverages?: string | null;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  menuItems: MenuItem[];
+}
+
+export interface CartItem {
+  item: MenuItem;
+  quantity: number;
+  selectedStarch?: string;
+  selectedSalad?: string;
+  selectedVeggie?: string;
+  selectedExtras?: { name: string; price: number }[];
+  selectedBeverages?: { name: string; price: number }[];
+}
+
+export interface DBOrder {
+  id: string;
+  user_id: string;
+  total: number;
+  status: string;
+  notes: string | null;
+  items: unknown; // JSONB representing the items details
+  created_at: string;
+}
+
+export interface CMSOrderPayload {
+  customerName: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  type: 'Pickup' | 'Delivery';
+  deliveryAddress?: string;
+  notes?: string;
+  total: number;
+  items: {
+    menuItemId: string;
+    quantity: number;
+    priceAtTime: number;
+  }[];
+}
+
+export interface UserProfile {
+  id: string;
+  phone?: string;
+  points?: number;
+  created_at?: string;
+}
+
+export interface ActiveOrderDetails {
+  id: string;
+  status: string;
+  type?: 'Pickup' | 'Delivery';
+  total?: number;
+  notes?: string;
+  items?: unknown;
+}

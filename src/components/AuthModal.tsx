@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import type { User as SupaUser } from '@supabase/supabase-js';
 import { X, Mail, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (user: any) => void;
+  onSuccess: (user: SupaUser) => void;
 }
 
 // Google SVG Icon
@@ -72,8 +73,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       });
       if (error) throw error;
       setStep('otp');
-    } catch (err: any) {
-      setError(err.message || 'Failed to send OTP.');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Failed to send OTP.';
+      setError(errMsg);
       setEmailError(true);
       setEmailShaking(true);
       setTimeout(() => setEmailShaking(false), 280);
@@ -103,8 +105,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         onSuccess(data.user);
         onClose();
       }
-    } catch (err: any) {
-      setError(err.message || 'Invalid OTP. Please try again.');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Invalid OTP. Please try again.';
+      setError(errMsg);
       setOtpError(true);
       setOtpShaking(true);
       setTimeout(() => setOtpShaking(false), 280);
@@ -129,8 +132,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       });
       if (error) throw error;
       // Redirect happens automatically — modal will close when auth state updates
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in with Google.');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Failed to sign in with Google.';
+      setError(errMsg);
       setSocialLoading(null);
     }
   };
@@ -147,8 +151,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       });
       if (error) throw error;
       // Redirect happens automatically
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in with Apple.');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Failed to sign in with Apple.';
+      setError(errMsg);
       setSocialLoading(null);
     }
   };
