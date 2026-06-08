@@ -2,8 +2,10 @@ import React from 'react';
 import { UtensilsCrossed, AlertTriangle } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
 import { useMenuStore } from '../store/useMenuStore';
+import { useTranslation } from '../hooks/useTranslation';
 
 export const MenuSection: React.FC = () => {
+  const { t } = useTranslation();
   const cart = useCartStore((state) => state.cart);
   const addClick = useCartStore((state) => state.addClick);
   const incrementItem = useCartStore((state) => state.incrementItem);
@@ -25,8 +27,8 @@ export const MenuSection: React.FC = () => {
         {/* Header & Category Selection Pills */}
         <div className="flex flex-col items-center text-center mb-16 space-y-6">
           <div className="space-y-3">
-            <span className="text-primary-light font-bold uppercase tracking-widest text-xs">Fresh Daily</span>
-            <h2 className="font-heading text-3xl md:text-5xl font-extrabold text-white tracking-tight">Traditional Menu</h2>
+            <span className="text-primary-light font-bold uppercase tracking-widest text-xs">{t('menu.fullMenuSubtitle')}</span>
+            <h2 className="font-heading text-3xl md:text-5xl font-extrabold text-white tracking-tight">{t('menu.title')}</h2>
             <div className="w-16 h-1 bg-primary mx-auto rounded-full mt-2" />
           </div>
 
@@ -39,7 +41,7 @@ export const MenuSection: React.FC = () => {
                 : 'text-white/60 hover:text-white'
                 }`}
             >
-              ● SHOW ALL
+              ● {t('nav.home') === 'Home' ? 'SHOW ALL' : 'ALL'}
             </button>
             {categories.map((category) => (
               <button
@@ -107,7 +109,7 @@ export const MenuSection: React.FC = () => {
                         {isSoldOut && (
                           <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-20">
                             <span className="bg-red-600 text-white font-black text-[9px] tracking-widest uppercase px-4 py-2 rounded-full border border-red-500 shadow-xl">
-                              OUT OF STOCK
+                              {t('menu.outOfStock')}
                             </span>
                           </div>
                         )}
@@ -121,7 +123,7 @@ export const MenuSection: React.FC = () => {
                         {/* Sold out indicator for no-image cards */}
                         {isSoldOut && (
                           <span className="bg-red-600 text-white font-black text-[9px] tracking-widest uppercase px-4 py-2 rounded-full border border-red-500 shadow-xl mb-2">
-                            OUT OF STOCK
+                            {t('menu.outOfStock')}
                           </span>
                         )}
                       </div>
@@ -142,14 +144,14 @@ export const MenuSection: React.FC = () => {
                         disabled
                         className="w-full py-3 bg-white/5 border border-white/5 text-white/30 rounded-full font-black text-[10px] tracking-widest uppercase cursor-not-allowed"
                       >
-                        Sold Out
+                        {t('menu.outOfStock')}
                       </button>
                     ) : qty === 0 ? (
                       <button
                         onClick={() => addClick(item)}
                         className="w-full py-3 bg-white/5 border border-white/10 rounded-full font-black text-[10px] tracking-widest uppercase hover:bg-primary hover:border-primary-light hover:text-white transition-all text-white/80 cursor-pointer"
                       >
-                        + Add To Plate
+                        {t('menu.addToPlate')}
                       </button>
                     ) : (
                       <div className="flex items-center justify-between bg-primary rounded-full p-0.5 border border-primary-light/35 shadow-md">

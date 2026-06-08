@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User as SupaUser } from '@supabase/supabase-js';
 import { X, Mail, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<'google' | 'apple' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   // validation/shake states
   const [emailError, setEmailError] = useState(false);
@@ -165,8 +167,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           <X className="w-4 h-4" />
         </button>
         
-        <h2 className="text-2xl font-heading font-extrabold text-white mb-2">Welcome</h2>
-        <p className="text-white/60 text-sm mb-6">Sign in to place orders and track your feast.</p>
+        <h2 className="text-2xl font-heading font-extrabold text-white mb-2">{t('modal.loginTitle')}</h2>
+        <p className="text-white/60 text-sm mb-6">{t('modal.loginSubtitle')}</p>
 
         {error && (
           <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold">
@@ -219,7 +221,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         {step === 'email' ? (
           <form onSubmit={handleSendOtp} className="space-y-4">
             <div>
-              <label className="block text-[10px] font-black tracking-widest text-white/50 uppercase mb-2">Email Address</label>
+              <label className="block text-[10px] font-black tracking-widest text-white/50 uppercase mb-2">{t('cart.email')}</label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                 <input 
@@ -237,7 +239,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               disabled={loading || !!socialLoading}
               className="w-full bg-primary hover:bg-primary-light text-white font-bold rounded-xl py-3 text-sm flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
             >
-              {loading ? 'Sending...' : 'Send Magic Link / OTP'}
+              {loading ? 'Sending...' : t('modal.sendLink')}
               {!loading && <ArrowRight className="w-4 h-4" />}
             </button>
           </form>
@@ -262,7 +264,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                </button>
              </div>
             <div>
-              <label className="block text-[10px] font-black tracking-widest text-white/50 uppercase mb-2">Enter 6-Digit Code</label>
+               <label className="block text-[10px] font-black tracking-widest text-white/50 uppercase mb-2">Enter Code</label>
               <input 
                 type="text"
                 value={otp}

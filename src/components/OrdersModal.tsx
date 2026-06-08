@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { safeJsonParse } from '../utils/helpers';
 import type { MenuItem, DBOrder } from '../types';
 import type { User as SupaUser } from '@supabase/supabase-js';
+import { useTranslation } from '../hooks/useTranslation';
 
 export interface PastOrderItem {
   menuItemId: string;
@@ -29,6 +30,7 @@ export const OrdersModal: React.FC<OrdersModalProps> = ({ user, isOpen, onClose 
   const [isClosing, setIsClosing] = useState(false);
   const [pastOrders, setPastOrders] = useState<DBOrder[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const { t } = useTranslation();
 
   const cart = useCartStore((state) => state.cart);
   const setCart = useCartStore((state) => state.setCart);
@@ -135,8 +137,8 @@ export const OrdersModal: React.FC<OrdersModalProps> = ({ user, isOpen, onClose 
           <div className="flex items-center gap-3">
             <Utensils className="w-6 h-6 text-primary-light" />
             <div>
-              <h3 className="font-heading text-lg font-extrabold text-white tracking-tight uppercase">Order History</h3>
-              <p className="text-[10px] text-primary-light font-black tracking-widest uppercase mt-0.5">Your Authentic Pretoria Feasts</p>
+              <h3 className="font-heading text-lg font-extrabold text-white tracking-tight uppercase">{t('nav.orders')}</h3>
+              <p className="text-[10px] text-primary-light font-black tracking-widest uppercase mt-0.5">{t('menu.subtitle')}</p>
             </div>
           </div>
           <button
@@ -219,7 +221,7 @@ export const OrdersModal: React.FC<OrdersModalProps> = ({ user, isOpen, onClose 
                     {/* Total & Reorder Button footer */}
                     <div className="pt-3 border-t border-white/5 flex justify-between items-center flex-wrap gap-3">
                       <div>
-                        <span className="text-[9px] uppercase tracking-wider text-white/35 font-bold block">Total Paid</span>
+                        <span className="text-[9px] uppercase tracking-wider text-white/35 font-bold block">{t('cart.total')}</span>
                         <span className="text-sm font-black text-primary-light">R {order.total?.toFixed(2) || '0.00'}</span>
                       </div>
                       

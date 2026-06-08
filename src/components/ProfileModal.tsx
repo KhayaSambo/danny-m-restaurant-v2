@@ -3,6 +3,7 @@ import { User as UserIcon, Check } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
 import { supabase } from '../lib/supabase';
 import type { User as SupaUser } from '@supabase/supabase-js';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface ProfileModalProps {
   user: SupaUser | null;
@@ -13,6 +14,7 @@ interface ProfileModalProps {
 export const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClose }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const { t } = useTranslation();
 
   const customerName = useCartStore((state) => state.customerName);
   const customerPhone = useCartStore((state) => state.customerPhone);
@@ -86,8 +88,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClos
           <div className="flex items-center gap-3">
             <UserIcon className="w-6 h-6 text-primary-light" />
             <div>
-              <h3 className="font-heading text-lg font-extrabold text-white tracking-tight uppercase">My Profile</h3>
-              <p className="text-[10px] text-primary-light font-black tracking-widest uppercase mt-0.5">Ubuntu Hearth Account</p>
+              <h3 className="font-heading text-lg font-extrabold text-white tracking-tight uppercase">{t('nav.profile')}</h3>
+              <p className="text-[10px] text-primary-light font-black tracking-widest uppercase mt-0.5">{t('modal.profileTitle')}</p>
             </div>
           </div>
           <button
@@ -101,17 +103,17 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClos
         {/* Scrollable Fields */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           <div className="space-y-1 bg-bg-dark/30 p-4 border border-white/5 rounded-2xl">
-            <span className="block text-[9px] uppercase tracking-wider text-white/40 font-bold">Email Address</span>
+            <span className="block text-[9px] uppercase tracking-wider text-white/40 font-bold">{t('cart.email')}</span>
             <span className="block text-sm text-white/90 font-bold font-mono">{user?.email || 'authenticated@user.com'}</span>
             <span className="block text-[8px] uppercase tracking-widest text-primary-light/60 font-black mt-1">● Account managed securely via Supabase</span>
           </div>
 
           <div className="space-y-4 pt-2">
             <div className="space-y-1.5">
-              <label className="block text-[10px] font-black tracking-widest text-white/50 uppercase">Full Name</label>
+              <label className="block text-[10px] font-black tracking-widest text-white/50 uppercase">{t('cart.fullName')}</label>
               <input
                 type="text"
-                placeholder="Enter your name"
+                placeholder={t('cart.fullName')}
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 className="w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3.5 text-xs text-white outline-none transition-all t-fire-input"
@@ -119,10 +121,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClos
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-[10px] font-black tracking-widest text-white/50 uppercase">Phone Number</label>
+              <label className="block text-[10px] font-black tracking-widest text-white/50 uppercase">{t('cart.phone')}</label>
               <input
                 type="tel"
-                placeholder="e.g. +27 82 123 4567"
+                placeholder={t('cart.phone')}
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
                 className="w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3.5 text-xs text-white outline-none transition-all t-fire-input"
@@ -130,10 +132,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClos
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-[10px] font-black tracking-widest text-white/50 uppercase">Delivery Address</label>
+              <label className="block text-[10px] font-black tracking-widest text-white/50 uppercase">{t('cart.address')}</label>
               <input
                 type="text"
-                placeholder="Street, Suburb, Pretoria"
+                placeholder={t('cart.address')}
                 value={deliveryAddress}
                 onChange={(e) => setDeliveryAddress(e.target.value)}
                 className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3.5 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.deliveryAddress ? 'is-error' : ''} ${fieldShaking.deliveryAddress ? 'is-shaking' : ''}`}
@@ -157,7 +159,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClos
             disabled={isSaving}
             className="px-8 py-3.5 bg-primary hover:bg-primary-light text-white font-extrabold rounded-full text-[10px] tracking-widest uppercase transition-all cursor-pointer shadow-lg shadow-primary/20 hover:shadow-primary/45 border border-primary-light/20 flex items-center justify-center gap-2"
           >
-            {isSaving ? 'Saving...' : 'Save Profile'} <Check className="w-3.5 h-3.5" />
+            {isSaving ? 'Saving...' : t('modal.save')} <Check className="w-3.5 h-3.5" />
           </button>
         </div>
 

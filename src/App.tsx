@@ -18,6 +18,7 @@ import { CustomizerModal } from './components/CustomizerModal';
 import { ProfileModal } from './components/ProfileModal';
 import { OrdersModal } from './components/OrdersModal';
 import { AuthModal } from './components/AuthModal';
+import { WelcomeLanguageModal } from './components/WelcomeLanguageModal';
 
 const CMS_URL = import.meta.env.VITE_CMS_URL || '';
 
@@ -29,6 +30,7 @@ const App: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
+  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(() => !localStorage.getItem('danny-m-onboarded'));
 
   // Zustand Store Selectors
   const isCartOpen = useCartStore((state) => state.isCartOpen);
@@ -114,7 +116,7 @@ const App: React.FC = () => {
 
   // 5. Scroll Lock effect for open modals
   useEffect(() => {
-    const isModalActive = isCartOpen || !!activeCustomizerItem || isAuthModalOpen || isProfileModalOpen || isOrdersModalOpen;
+    const isModalActive = isCartOpen || !!activeCustomizerItem || isAuthModalOpen || isProfileModalOpen || isOrdersModalOpen || isWelcomeModalOpen;
     if (isModalActive) {
       document.body.classList.add('overflow-hidden');
     } else {
@@ -123,7 +125,7 @@ const App: React.FC = () => {
     return () => {
       document.body.classList.remove('overflow-hidden');
     };
-  }, [isCartOpen, activeCustomizerItem, isAuthModalOpen, isProfileModalOpen, isOrdersModalOpen]);
+  }, [isCartOpen, activeCustomizerItem, isAuthModalOpen, isProfileModalOpen, isOrdersModalOpen, isWelcomeModalOpen]);
 
   // 6. Reconcile Yoco Hosted Checkout Redirect Callback States (Success & Cancel)
   useEffect(() => {
@@ -213,6 +215,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-bg-light text-white/90 font-body selection:bg-primary selection:text-white overflow-x-hidden">
+      <WelcomeLanguageModal isOpen={isWelcomeModalOpen} onClose={() => setIsWelcomeModalOpen(false)} />
       {/* Navigation */}
       <Navbar
         user={user}

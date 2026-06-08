@@ -1,8 +1,10 @@
 import React from 'react';
 import { useCartStore } from '../store/useCartStore';
 import { useMenuStore } from '../store/useMenuStore';
+import { useTranslation } from '../hooks/useTranslation';
 
 export const SignatureSpecials: React.FC = () => {
+  const { t } = useTranslation();
   const categories = useMenuStore((state) => state.categories);
   const cart = useCartStore((state) => state.cart);
   const addClick = useCartStore((state) => state.addClick);
@@ -24,8 +26,8 @@ export const SignatureSpecials: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6">
 
         <div className="text-center mb-16 space-y-3">
-          <span className="text-primary-light font-bold uppercase tracking-widest text-xs">Chef Recommends</span>
-          <h2 className="font-heading text-3xl md:text-5xl font-extrabold tracking-tight text-white animate-pulse-slow">Ubuntu Signatures</h2>
+          <span className="text-primary-light font-bold uppercase tracking-widest text-xs">{t('menu.chefRecommends')}</span>
+          <h2 className="font-heading text-3xl md:text-5xl font-extrabold tracking-tight text-white animate-pulse-slow">{t('menu.title')}</h2>
           <div className="w-16 h-1 bg-primary mx-auto rounded-full mt-2" />
         </div>
 
@@ -34,7 +36,7 @@ export const SignatureSpecials: React.FC = () => {
           {/* Card 1: Warm Amber (Braai Meat Meal) */}
           <div className="relative bg-[#E67E22] rounded-[2.5rem] p-8 min-h-[300px] flex flex-col justify-between overflow-visible shadow-2xl transition-transform duration-500 hover:-translate-y-2 group">
             <div className="max-w-[55%] z-10 flex flex-col justify-between h-full">
-              <span className="text-[9px] font-black tracking-widest text-white/70 uppercase">Voted Best Choice</span>
+              <span className="text-[9px] font-black tracking-widest text-white/70 uppercase">{t('menu.votedBest')}</span>
               <div>
                 <h3 className="font-heading text-3xl font-extrabold text-white leading-tight mt-4 uppercase">Braai Meat</h3>
                 <p className="text-white/80 text-xs mt-2 font-medium">
@@ -53,7 +55,7 @@ export const SignatureSpecials: React.FC = () => {
                         onClick={() => addClick(braaiItem)}
                         className="px-5 py-2 bg-black/35 hover:bg-black/50 border border-white/10 rounded-full font-black text-[9px] tracking-widest uppercase transition-all text-white cursor-pointer"
                       >
-                        + Add To Plate
+                        {t('menu.addToPlate')}
                       </button>
                     ) : (
                       <div className="flex items-center justify-between w-28 bg-black/40 rounded-full p-0.5 border border-white/10">
@@ -89,7 +91,7 @@ export const SignatureSpecials: React.FC = () => {
           {/* Card 2: Deep Terracotta (Mogodu Meal) */}
           <div className="relative bg-[#D35400] rounded-[2.5rem] p-8 min-h-[300px] flex flex-col justify-between overflow-visible shadow-2xl transition-transform duration-500 hover:-translate-y-2 group">
             <div className="max-w-[55%] z-10 flex flex-col justify-between h-full">
-              <span className="text-[9px] font-black tracking-widest text-white/70 uppercase">Slow Braised Soul</span>
+              <span className="text-[9px] font-black tracking-widest text-white/70 uppercase">{t('menu.slowBraised')}</span>
               <div>
                 <h3 className="font-heading text-3xl font-extrabold text-white leading-tight mt-4 uppercase">Mogodu</h3>
                 <p className="text-white/80 text-xs mt-2 font-medium">
@@ -108,7 +110,7 @@ export const SignatureSpecials: React.FC = () => {
                         onClick={() => addClick(mogoduItem)}
                         className="px-5 py-2 bg-black/35 hover:bg-black/50 border border-white/10 rounded-full font-black text-[9px] tracking-widest uppercase transition-all text-white cursor-pointer"
                       >
-                        + Add To Plate
+                        {t('menu.addToPlate')}
                       </button>
                     ) : (
                       <div className="flex items-center justify-between w-28 bg-black/40 rounded-full p-0.5 border border-white/10">
@@ -144,7 +146,7 @@ export const SignatureSpecials: React.FC = () => {
           {/* Card 3: Deep Slate/Charcoal (Beef Stew Meal) */}
           <div className="relative bg-[#2C2421] rounded-[2.5rem] p-8 min-h-[300px] flex flex-col justify-between overflow-visible shadow-2xl transition-transform duration-500 hover:-translate-y-2 group border border-white/5">
             <div className="max-w-[55%] z-10 flex flex-col justify-between h-full">
-              <span className="text-[9px] font-black tracking-widest text-white/50 uppercase">Classic Simmer</span>
+              <span className="text-[9px] font-black tracking-widest text-white/50 uppercase">{t('menu.classicSimmer')}</span>
               <div>
                 <h3 className="font-heading text-3xl font-extrabold text-white leading-tight mt-4 uppercase">Beef Stew</h3>
                 <p className="text-white/70 text-xs mt-2 font-medium">
@@ -163,7 +165,7 @@ export const SignatureSpecials: React.FC = () => {
                         onClick={() => addClick(beefStewItem)}
                         className="px-5 py-2 bg-black/35 hover:bg-black/50 border border-white/10 rounded-full font-black text-[9px] tracking-widest uppercase transition-all text-white cursor-pointer"
                       >
-                        + Add To Plate
+                        {t('menu.addToPlate')}
                       </button>
                     ) : (
                       <div className="flex items-center justify-between w-28 bg-black/40 rounded-full p-0.5 border border-white/10">

@@ -1,7 +1,10 @@
 import React from 'react';
 import { MapPin, Clock, Info, CreditCard, Package } from 'lucide-react';
+import { useTranslation } from '../hooks/useTranslation';
 
 export const Footer: React.FC = () => {
+  const { t } = useTranslation();
+
   return (
     <footer id="contact" className="bg-bg-dark pt-24 pb-12 text-white/80 border-t border-white/5 relative">
       <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-3 gap-16 mb-16 relative z-10">
@@ -9,7 +12,7 @@ export const Footer: React.FC = () => {
         <div className="space-y-6">
           <h3 className="font-heading text-2xl font-extrabold tracking-tight text-white">DANNY M</h3>
           <p className="text-white/60 leading-relaxed text-sm">
-            Authentic African flavors in the heart of Pretoria. Dedicated to the spirit of Ubuntu and the art of traditional cooking.
+            {t('hero.description')}
           </p>
           <div className="flex gap-4">
             <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary transition-colors cursor-pointer text-white shadow-md" aria-label="Facebook">
@@ -65,7 +68,7 @@ export const Footer: React.FC = () => {
       </div>
 
       <div className="border-t border-white/5 pt-12 text-center text-white/30 text-xs">
-        &copy; {new Date().getFullYear()} Danny M Restaurant. The Taste of Ubuntu. All rights reserved.
+        &copy; {new Date().getFullYear()} Danny M Restaurant. The Taste of Ubuntu. {t('footer.rights')}
       </div>
     </footer>
   );

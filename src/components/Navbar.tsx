@@ -3,6 +3,8 @@ import { User, ShoppingCart, Utensils, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCartStore } from '../store/useCartStore';
 import type { User as SupaUser } from '@supabase/supabase-js';
+import { LanguageSelector } from './LanguageSelector';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface NavbarProps {
   user: SupaUser | null;
@@ -22,6 +24,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isScrolled, setIsScrolled] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isProfileClosing, setIsProfileClosing] = useState(false);
+
+  const { t } = useTranslation();
 
   const totalCartCount = useCartStore((state) => state.totalCartCount());
   const setIsCartOpen = useCartStore((state) => state.setIsCartOpen);
@@ -74,20 +78,21 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         <ul className="hidden md:flex gap-10 font-bold text-xs tracking-widest text-white/60 uppercase">
           <li>
-            <a href="#home" className="hover:text-primary transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300">Home</a>
+            <a href="#home" className="hover:text-primary transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300">{t('nav.home')}</a>
           </li>
           <li>
-            <a href="#about" className="hover:text-primary transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300">Our Story</a>
+            <a href="#about" className="hover:text-primary transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300">{t('nav.story')}</a>
           </li>
           <li>
-            <a href="#menu" className="hover:text-primary transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300">Menu</a>
+            <a href="#menu" className="hover:text-primary transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300">{t('nav.menu')}</a>
           </li>
           <li>
-            <a href="#contact" className="hover:text-primary transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300">Contact</a>
+            <a href="#contact" className="hover:text-primary transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300">{t('nav.contact')}</a>
           </li>
         </ul>
 
         <div className="flex items-center gap-4">
+          <LanguageSelector />
           <div className="relative">
             <button
               onClick={() => {
@@ -109,7 +114,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               data-origin="top-right"
             >
               <div className="px-4 py-3 border-b border-white/10 mb-2">
-                <span className="block text-xs text-white/50 uppercase tracking-widest font-black">Logged in as</span>
+                <span className="block text-xs text-white/50 uppercase tracking-widest font-black">{t('nav.loggedInAs')}</span>
                 <span className="block text-sm font-bold text-white mt-1 truncate">{user?.email || 'user@example.com'}</span>
               </div>
               <button
@@ -119,7 +124,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }}
                 className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 rounded-xl text-sm font-bold transition-colors cursor-pointer"
               >
-                <User className="w-4 h-4 text-primary-light" /> My Profile
+                <User className="w-4 h-4 text-primary-light" /> {t('nav.profile')}
               </button>
               <button
                 onClick={() => {
@@ -128,13 +133,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }}
                 className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 rounded-xl text-sm font-bold transition-colors cursor-pointer"
               >
-                <Utensils className="w-4 h-4 text-primary-light" /> Past Orders
+                <Utensils className="w-4 h-4 text-primary-light" /> {t('nav.orders')}
               </button>
               <button
                 onClick={handleSignOut}
                 className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-red-500/10 text-red-400 rounded-xl text-sm font-bold transition-colors mt-1 cursor-pointer"
               >
-                <LogOut className="w-4 h-4" /> Sign Out
+                <LogOut className="w-4 h-4" /> {t('nav.signOut')}
               </button>
             </div>
           </div>
@@ -156,7 +161,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
           <a href="#menu" className="bg-primary text-white px-6 py-2.5 rounded-full font-bold hover:bg-primary-light hover:shadow-lg hover:shadow-primary/30 transition-all text-xs tracking-widest uppercase border border-primary-light/20">
-            Order Now
+            {t('nav.orderNow')}
           </a>
         </div>
       </div>

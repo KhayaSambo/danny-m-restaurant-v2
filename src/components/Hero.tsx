@@ -1,7 +1,10 @@
 import React from 'react';
 import { Salad, Home, CreditCard, Wine } from 'lucide-react';
+import { useTranslation } from '../hooks/useTranslation';
 
 export const Hero: React.FC = () => {
+  const { t } = useTranslation();
+
   return (
     <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden bg-bg-dark">
       {/* Glow Effects */}
@@ -39,16 +42,16 @@ export const Hero: React.FC = () => {
         {/* Hero Description */}
         <div className="space-y-6 max-w-3xl z-10">
           <h1 className="font-heading text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-none text-white">
-            The Taste of <span className="bg-gradient-to-r from-primary-light to-primary bg-clip-text text-transparent font-extrabold">Ubuntu</span>
+            {t('hero.title')}
           </h1>
 
           <p className="text-base md:text-lg text-white/70 max-w-2xl mx-auto leading-relaxed">
-            Authentic African cuisine crafted with love, deep tradition, and a proud dedication to <span className="text-primary-light font-semibold">excellent, clean food</span>.
+            {t('hero.description')}
           </p>
 
           <div className="pt-4 flex justify-center">
             <a href="#menu" className="inline-block bg-primary hover:bg-primary-light text-white px-10 py-4 rounded-full font-bold text-sm transition-all transform hover:-translate-y-0.5 shadow-xl shadow-primary/20 hover:shadow-primary/40 border border-primary-light/20 tracking-wider uppercase flex items-center gap-2">
-              Explore Our Menu
+              {t('menu.fullMenuTitle')}
             </a>
           </div>
         </div>
@@ -57,23 +60,23 @@ export const Hero: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl pt-6">
           <div className="bg-[#151211] border border-white/5 rounded-2xl p-4 hover:border-primary/20 transition-all text-center flex flex-col items-center justify-center">
             <Wine className="w-6 h-6 text-primary-light mb-1" />
-            <span className="text-[10px] uppercase text-white/40 tracking-wider font-bold">Concept</span>
-            <span className="text-xs font-semibold block text-white/95 mt-1">Ubuntu Gatherings</span>
+            <span className="text-[10px] uppercase text-white/40 tracking-wider font-bold">{t('nav.story')}</span>
+            <span className="text-xs font-semibold block text-white/95 mt-1">{t('about.ubuntuHeader')}</span>
           </div>
           <div className="bg-[#151211] border border-white/5 rounded-2xl p-4 hover:border-primary/20 transition-all text-center flex flex-col items-center justify-center">
             <Salad className="w-6 h-6 text-primary-light mb-1" />
-            <span className="text-[10px] uppercase text-white/40 tracking-wider font-bold">Kitchen Standard</span>
-            <span className="text-xs font-semibold block text-white/95 mt-1">Strict Hygiene Seal</span>
+            <span className="text-[10px] uppercase text-white/40 tracking-wider font-bold">{t('about.cleanSubtitle')}</span>
+            <span className="text-xs font-semibold block text-white/95 mt-1">{t('about.cleanBadge')}</span>
           </div>
           <div className="bg-[#151211] border border-white/5 rounded-2xl p-4 hover:border-primary/20 transition-all text-center flex flex-col items-center justify-center">
             <CreditCard className="w-6 h-6 text-primary-light mb-1" />
-            <span className="text-[10px] uppercase text-white/40 tracking-wider font-bold">Payments</span>
-            <span className="text-xs font-semibold block text-white/95 mt-1">NFC & Debit Cards</span>
+            <span className="text-[10px] uppercase text-white/40 tracking-wider font-bold">{t('cart.placeOrder')}</span>
+            <span className="text-xs font-semibold block text-white/95 mt-1">Cards & Pay</span>
           </div>
           <div className="bg-[#151211] border border-white/5 rounded-2xl p-4 hover:border-primary/20 transition-all text-center flex flex-col items-center justify-center">
             <Home className="w-6 h-6 text-primary-light mb-1" />
-            <span className="text-[10px] uppercase text-white/40 tracking-wider font-bold">Hours</span>
-            <span className="text-xs font-semibold block text-white/95 mt-1">Mon - Sat: 9am - 5pm</span>
+            <span className="text-[10px] uppercase text-white/40 tracking-wider font-bold">{t('footer.hours')}</span>
+            <span className="text-xs font-semibold block text-white/95 mt-1">9am - 5pm</span>
           </div>
         </div>
 

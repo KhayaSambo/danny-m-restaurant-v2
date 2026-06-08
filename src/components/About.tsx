@@ -1,30 +1,32 @@
 import React, { useState } from 'react';
 import { Salad, Handshake, Flame, Sparkles } from 'lucide-react';
+import { useTranslation } from '../hooks/useTranslation';
 
 export const About: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
+  const { t } = useTranslation();
 
   const pillars = [
     {
-      title: "Clean Food Focus",
+      title: t('about.cleanTitle'),
       icon: Salad,
-      badge: "Absolute Hygiene",
-      subtitle: "Excellent Clean Food First",
-      text: "At Danny M, our kitchen operates on a policy of absolute purity. We source only fresh, premium ingredients, keeping our kitchen clean enough to treat every guest like our own children. No shortcuts, just healthy and authentic meals.",
+      badge: t('about.cleanBadge'),
+      subtitle: t('about.cleanSubtitle'),
+      text: t('about.cleanText'),
     },
     {
-      title: "Spirit of Ubuntu",
+      title: t('about.ubuntuHeader'),
       icon: Handshake,
-      badge: "We Are Family",
-      subtitle: "Caring For Every Client",
-      text: "Ubuntu means 'I am because we are.' Our team prepares every dish as an act of absolute love and care. We greet you with warm smiles and treat your dining experience as a sacred gathering of family.",
+      badge: t('about.ubuntuBadge'),
+      subtitle: t('about.ubuntuSubtitle'),
+      text: t('about.ubuntuText'),
     },
     {
-      title: "African Tradition",
+      title: t('about.tradTitle'),
       icon: Flame,
-      badge: "Slow-Cooked Heritage",
-      subtitle: "Real Pretoria Soul Food",
-      text: "Celebrating South African culture, we master traditional slow-cooked stews, slow-braised Mogodu, and perfect Braai. Our cooking respects the ancestral methods to deliver deep, robust, comforting flavors.",
+      badge: t('about.tradBadge'),
+      subtitle: t('about.tradSubtitle'),
+      text: t('about.tradText'),
     }
   ];
 
@@ -39,8 +41,8 @@ export const About: React.FC = () => {
               <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
             </div>
             <div>
-              <span className="text-[10px] uppercase text-primary-light font-black tracking-widest">Our Promise</span>
-              <h4 className="font-bold text-white text-base">The Danny M Ubuntu Seal</h4>
+              <span className="text-[10px] uppercase text-primary-light font-black tracking-widest">{t('about.promiseSubtitle')}</span>
+              <h4 className="font-bold text-white text-base">{t('about.promiseTitle')}</h4>
             </div>
           </div>
 
@@ -93,21 +95,21 @@ export const About: React.FC = () => {
         {/* Explanatory Brand Text */}
         <div className="space-y-8">
           <div className="space-y-2">
-            <span className="text-primary-light font-bold uppercase tracking-widest text-xs">About Danny M</span>
-            <h2 className="font-heading text-3xl md:text-5xl font-extrabold text-white leading-tight tracking-tight">Rooted in Tradition, Served with Care</h2>
+            <span className="text-primary-light font-bold uppercase tracking-widest text-xs">{t('about.title')}</span>
+            <h2 className="font-heading text-3xl md:text-5xl font-extrabold text-white leading-tight tracking-tight">{t('about.header')}</h2>
           </div>
           <p className="text-base text-white/70 leading-relaxed">
-            Located in the vibrant heart of Pretoria Central, Danny M is more than just a restaurant—it's a home for authentic African flavors. We specialize in traditional dishes that celebrate freshness and simplicity.
+            {t('about.desc1')}
           </p>
           <p className="text-base text-white/70 leading-relaxed">
-            Our kitchen is a place of dedication. Each meal is prepared by a staff that views cooking as an act of love. We believe in "excellent clean food"—using the freshest ingredients to ensure every bite is as healthy as it is delicious.
+            {t('about.desc2')}
           </p>
           <div className="bg-bg-card p-6 rounded-3xl border border-white/5 border-l-4 border-l-primary shadow-xl">
             <h3 className="text-lg font-black mb-3 flex items-center gap-3 text-white">
-              <Sparkles className="w-5 h-5 text-primary-light" /> The Spirit of Ubuntu
+              <Sparkles className="w-5 h-5 text-primary-light" /> {t('about.ubuntuHeader')}
             </h3>
             <p className="text-white/80 italic text-sm leading-relaxed">
-              "I am because we are." At Danny M, this isn't just a tagline; it's how we treat every client. We care for each person who walks through our doors with the same warmth and respect we'd show our own family.
+              {t('about.ubuntuText')}
             </p>
           </div>
         </div>

@@ -17,6 +17,7 @@ import { useOrderTrackerStore } from '../store/useOrderTrackerStore';
 import { safeJsonParse, getItemPrice, calculateVat } from '../utils/helpers';
 import { supabase } from '../lib/supabase';
 import type { User as SupaUser } from '@supabase/supabase-js';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface CartDrawerProps {
   user: SupaUser | null;
@@ -24,6 +25,7 @@ interface CartDrawerProps {
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen }) => {
+  const { t } = useTranslation();
   const cart = useCartStore((state) => state.cart);
   const isCartOpen = useCartStore((state) => state.isCartOpen);
   const isCartClosing = useCartStore((state) => state.isCartClosing);
@@ -223,8 +225,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
             <div className="flex items-center gap-3">
               <Utensils className="w-6 h-6 text-primary-light" />
               <div>
-                <h3 className="font-heading text-lg font-extrabold text-white tracking-tight uppercase">Your Ubuntu Plate</h3>
-                <p className="text-[10px] text-primary-light font-black tracking-widest uppercase mt-0.5">Ready for the Kitchen</p>
+                <h3 className="font-heading text-lg font-extrabold text-white tracking-tight uppercase">{t('cart.title')}</h3>
+                <p className="text-[10px] text-primary-light font-black tracking-widest uppercase mt-0.5">{t('about.cleanSubtitle')}</p>
               </div>
             </div>
           )}
@@ -444,15 +446,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
           ) : Object.keys(cart).length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-20 text-white/40">
               <ShoppingBag className="w-16 h-16 text-white/20 mx-auto" />
-              <h4 className="font-heading text-lg font-bold text-white uppercase tracking-tight">Your Plate is Empty</h4>
+              <h4 className="font-heading text-lg font-bold text-white uppercase tracking-tight">{t('cart.empty')}</h4>
               <p className="text-xs max-w-xs mx-auto">
-                Add some of our slow-cooked Pretoria traditional meals to customize your perfect plate.
+                Ubuntu: "I am because we are."
               </p>
               <button
                 onClick={handleCloseCart}
                 className="mt-2 px-6 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-full text-[10px] tracking-widest uppercase transition-all cursor-pointer"
               >
-                Start Adding meals
+                {t('menu.fullMenuTitle')}
               </button>
             </div>
           ) : (
@@ -598,17 +600,17 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                         <span>R {subtotal.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-white/50 text-xs">
-                        <span>VAT (15% South African Standard)</span>
+                        <span>VAT (15%)</span>
                         <span>R {calculatedVat.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between font-extrabold text-white text-base pt-1">
-                        <span>Grand Total</span>
+                        <span>{t('cart.total')}</span>
                         <span className="text-primary-light">R {totalCartPrice.toFixed(2)}</span>
                       </div>
                     </div>
 
                     <form onSubmit={handleCheckoutSubmit} className="space-y-4">
-                      <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block">Checkout Details</span>
+                      <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block">{t('cart.checkout')}</span>
 
                       {orderError && (
                         <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl text-center flex items-center justify-center gap-1.5">
@@ -620,7 +622,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                         <input
                           type="text"
                           required
-                          placeholder="Your Name (Required)*"
+                          placeholder={t('cart.fullName')}
                           value={customerName}
                           onChange={(e) => setCustomerName(e.target.value)}
                           className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.name ? 'is-error' : ''} ${fieldShaking.name ? 'is-shaking' : ''}`}
@@ -628,7 +630,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
 
                         <input
                           type="tel"
-                          placeholder="Phone Number (Highly Recommended)"
+                          placeholder={t('cart.phone')}
                           value={customerPhone}
                           onChange={(e) => setCustomerPhone(e.target.value)}
                           className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.phone ? 'is-error' : ''} ${fieldShaking.phone ? 'is-shaking' : ''}`}
@@ -636,7 +638,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
 
                         <input
                           type="email"
-                          placeholder="Email Address (For order updates)"
+                          placeholder="Email Address"
                           value={customerEmail}
                           onChange={(e) => setCustomerEmail(e.target.value)}
                           className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.email ? 'is-error' : ''} ${fieldShaking.email ? 'is-shaking' : ''}`}
@@ -644,7 +646,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
 
                         <input
                           type="text"
-                          placeholder="Special instructions (e.g. Extra Gravy)"
+                          placeholder={t('cart.notes')}
                           value={notes}
                           onChange={(e) => setNotes(e.target.value)}
                           className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.notes ? 'is-error' : ''} ${fieldShaking.notes ? 'is-shaking' : ''}`}
@@ -667,7 +669,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                           </>
                         ) : (
                           <span className="flex items-center justify-center gap-1.5">
-                            <span>Submit Order</span> <Flame className="w-4 h-4" />
+                            <span>{t('cart.placeOrder')}</span> <Flame className="w-4 h-4" />
                           </span>
                         )}
                       </button>
@@ -806,14 +808,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
 
                     <div className="border-t border-white/10 pt-4 mt-2 space-y-3 bg-bg-card">
                       <div className="flex justify-between text-white font-extrabold text-sm px-2">
-                        <span>Total:</span>
+                        <span>{t('cart.total')}:</span>
                         <span className="text-primary-light">R {totalCartPrice.toFixed(2)}</span>
                       </div>
                       <button
                         onClick={() => setCartStep('checkout')}
                         className="w-full py-4 bg-primary hover:bg-primary-light text-white font-extrabold rounded-full text-xs tracking-widest uppercase shadow-lg shadow-primary/20 border border-primary-light/20 flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        <span>Proceed to Checkout</span> <Check className="w-4 h-4" />
+                        <span>{t('cart.checkout')}</span> <Check className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -837,13 +839,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                           <span>R {calculatedVat.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between font-extrabold text-white text-base pt-1">
-                          <span>Grand Total</span>
+                          <span>{t('cart.total')}</span>
                           <span className="text-primary-light">R {totalCartPrice.toFixed(2)}</span>
                         </div>
                       </div>
 
                       <form onSubmit={handleCheckoutSubmit} className="space-y-4">
-                        <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block">Checkout Details</span>
+                        <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block">{t('cart.checkout')}</span>
 
                         {orderError && (
                           <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl text-center flex items-center justify-center gap-1.5">
@@ -855,7 +857,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                           <input
                             type="text"
                             required
-                            placeholder="Your Name (Required)*"
+                            placeholder={t('cart.fullName')}
                             value={customerName}
                             onChange={(e) => setCustomerName(e.target.value)}
                             className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.name ? 'is-error' : ''} ${fieldShaking.name ? 'is-shaking' : ''}`}
@@ -863,7 +865,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
 
                           <input
                             type="tel"
-                            placeholder="Phone Number (Highly Recommended)"
+                            placeholder={t('cart.phone')}
                             value={customerPhone}
                             onChange={(e) => setCustomerPhone(e.target.value)}
                             className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.phone ? 'is-error' : ''} ${fieldShaking.phone ? 'is-shaking' : ''}`}
@@ -871,7 +873,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
 
                           <input
                             type="email"
-                            placeholder="Email Address (For order updates)"
+                            placeholder={t('cart.email')}
                             value={customerEmail}
                             onChange={(e) => setCustomerEmail(e.target.value)}
                             className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.email ? 'is-error' : ''} ${fieldShaking.email ? 'is-shaking' : ''}`}
@@ -879,7 +881,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
 
                           <input
                             type="text"
-                            placeholder="Special instructions (e.g. Extra Gravy)"
+                            placeholder={t('cart.notes')}
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.notes ? 'is-error' : ''} ${fieldShaking.notes ? 'is-shaking' : ''}`}
@@ -887,7 +889,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                         </div>
 
                         <div className="bg-[#1c1513] border border-primary/20 rounded-xl p-3 text-center text-[10px] text-primary-light font-black tracking-widest uppercase mb-4 mt-2 animate-pulse-slow">
-                          ● Pickup Order
+                          ● {t('cart.pickupOrder')}
                         </div>
 
                         <button
@@ -902,7 +904,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                             </>
                           ) : (
                             <span className="flex items-center justify-center gap-1.5">
-                              <span>Submit Order</span> <Flame className="w-4 h-4" />
+                              <span>{t('cart.placeOrder')}</span> <Flame className="w-4 h-4" />
                             </span>
                           )}
                         </button>
