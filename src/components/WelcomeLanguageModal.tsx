@@ -16,23 +16,23 @@ export const WelcomeLanguageModal: React.FC<WelcomeLanguageModalProps> = ({ isOp
     setLanguage(selectedLang);
     localStorage.setItem('danny-m-onboarded', 'true');
     setIsClosing(true);
+    const closeMs = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--modal-close-dur")
+    ) || 150;
     setTimeout(() => {
       onClose();
-    }, 400); // match duration
+      setIsClosing(false);
+    }, closeMs);
   };
 
   if (!isOpen) return null;
 
   return (
     <div
-      className={`fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-lg transition-opacity duration-500 ${
-        isClosing ? 'opacity-0 pointer-events-none' : 'opacity-100'
-      }`}
+      className={`fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-lg transition-opacity duration-300 ${!isClosing ? 'opacity-100' : 'opacity-0'}`}
     >
       <div
-        className={`relative bg-bg-card/98 border border-white/10 rounded-[2.5rem] w-full max-w-2xl p-8 md:p-12 shadow-[0_0_80px_rgba(217,93,46,0.15)] backdrop-blur-2xl overflow-hidden flex flex-col justify-between transition-all duration-500 transform ${
-          isClosing ? 'scale-95 translate-y-4' : 'scale-100 translate-y-0'
-        }`}
+        className={`relative bg-bg-card/98 border border-white/10 rounded-[2.5rem] w-full max-w-2xl p-8 md:p-12 shadow-[0_0_80px_rgba(217,93,46,0.15)] backdrop-blur-2xl overflow-hidden flex flex-col justify-between t-modal ${!isClosing ? 'is-open' : 'is-closing'}`}
       >
         {/* Glow ambient background inside modal */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(211,84,0,0.12)_0%,rgba(0,0,0,0)_70%)] z-0 pointer-events-none" />
@@ -52,8 +52,8 @@ export const WelcomeLanguageModal: React.FC<WelcomeLanguageModalProps> = ({ isOp
           </div>
 
           <p className="text-white/75 text-sm leading-relaxed max-w-xl">
-            In South Africa, <strong className="text-primary-light font-extrabold">Ubuntu</strong> reminds us that <em>"I am because we are"</em>—that we are all connected as one family. 
-            Here at Danny M, we believe that sharing a table begins with speaking your language. 
+            In South Africa, <strong className="text-primary-light font-extrabold">Ubuntu</strong> reminds us that <em>"I am because we are"</em>—that we are all connected as one family.
+            Here at Danny M, we believe that sharing a table begins with speaking your language.
             We embrace the beautiful diversity of our home by offering our menu in all <strong className="text-white">11 official languages</strong>.
           </p>
 
@@ -61,7 +61,7 @@ export const WelcomeLanguageModal: React.FC<WelcomeLanguageModalProps> = ({ isOp
             <label className="block text-[10px] font-black tracking-widest text-white/50 uppercase">
               Choose your language / Khetha ulimi lwakho
             </label>
-            
+
             {/* Grid of Languages */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
               {LANGUAGES.map((lang) => (
@@ -69,11 +69,10 @@ export const WelcomeLanguageModal: React.FC<WelcomeLanguageModalProps> = ({ isOp
                   key={lang.code}
                   type="button"
                   onClick={() => setSelectedLang(lang.code)}
-                  className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all duration-300 cursor-pointer flex flex-col items-center justify-center ${
-                    selectedLang === lang.code
+                  className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all duration-300 cursor-pointer flex flex-col items-center justify-center ${selectedLang === lang.code
                       ? 'bg-primary/20 border-primary text-primary-light shadow-lg shadow-primary/10'
                       : 'bg-white/5 border-white/5 text-white/60 hover:bg-white/10 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <span className="font-black text-sm">{lang.nativeName}</span>
                   <span className="text-[9px] opacity-50 font-normal">{lang.name}</span>
@@ -87,7 +86,7 @@ export const WelcomeLanguageModal: React.FC<WelcomeLanguageModalProps> = ({ isOp
             onClick={handleFinish}
             className="w-full sm:w-auto px-12 py-4 bg-primary hover:bg-primary-light text-white font-extrabold rounded-full text-xs tracking-widest uppercase transition-all shadow-lg shadow-primary/20 hover:shadow-primary/45 border border-primary-light/20 flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>Enter Hearth / Ngena</span> <Heart className="w-4 h-4 text-white fill-white/20" />
+            <span>Enter / Ngena</span> <Heart className="w-4 h-4 text-white fill-white/20" />
           </button>
         </div>
       </div>

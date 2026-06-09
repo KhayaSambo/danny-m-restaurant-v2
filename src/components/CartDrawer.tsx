@@ -15,6 +15,7 @@ import {
 import { useCartStore } from '../store/useCartStore';
 import { useOrderTrackerStore } from '../store/useOrderTrackerStore';
 import { safeJsonParse, getItemPrice, calculateVat } from '../utils/helpers';
+import { hasActiveSpecial } from '../utils/pricing';
 import { supabase } from '../lib/supabase';
 import type { User as SupaUser } from '@supabase/supabase-js';
 import { useTranslation } from '../hooks/useTranslation';
@@ -481,7 +482,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                             )}
 
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-heading font-extrabold text-sm text-white uppercase truncate tracking-tight">{item.name}</h4>
+                              <h4 className="font-heading font-extrabold text-sm text-white uppercase truncate tracking-tight">
+                                {item.name}
+                                {hasActiveSpecial(item) && (
+                                  <span className="ml-2 bg-primary/20 text-primary-light text-[8px] px-1.5 py-0.5 rounded uppercase tracking-widest align-middle">Special</span>
+                                )}
+                              </h4>
                               <span className="text-xs text-primary-light font-black block mt-0.5">R {getItemPrice(cartItem).toFixed(2)}</span>
                             </div>
 
@@ -700,7 +706,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                               )}
 
                               <div className="flex-1 min-w-0">
-                                <h4 className="font-heading font-extrabold text-sm text-white uppercase truncate tracking-tight">{item.name}</h4>
+                                <h4 className="font-heading font-extrabold text-sm text-white uppercase truncate tracking-tight">
+                                  {item.name}
+                                  {hasActiveSpecial(item) && (
+                                    <span className="ml-2 bg-primary/20 text-primary-light text-[8px] px-1.5 py-0.5 rounded uppercase tracking-widest align-middle">Special</span>
+                                  )}
+                                </h4>
                                 <span className="text-xs text-primary-light font-black block mt-0.5">R {getItemPrice(cartItem).toFixed(2)}</span>
                               </div>
 

@@ -1,4 +1,5 @@
 import type { CartItem } from '../types';
+import { calculateDiscountedPrice } from './pricing';
 
 /**
  * Safely parse a JSON string, catching errors and returning a default value.
@@ -29,7 +30,7 @@ export function parseExtraPrice(priceStr: string | number | undefined): number {
  * Calculates the total unit price of a cart item including selected extras and beverages.
  */
 export function getItemPrice(cartItem: CartItem): number {
-  let price = cartItem.item.price;
+  let price = calculateDiscountedPrice(cartItem.item);
   if (cartItem.selectedExtras) {
     price += cartItem.selectedExtras.reduce((sum, extra) => sum + extra.price, 0);
   }

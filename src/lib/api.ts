@@ -1,4 +1,4 @@
-import type { Category, CMSOrderPayload } from '../types';
+import type { Category, CMSOrderPayload, BundleDeal } from '../types';
 
 const CMS_URL = import.meta.env.VITE_CMS_URL || '';
 
@@ -11,6 +11,19 @@ export async function fetchMenu(): Promise<Category[]> {
     throw new Error('Failed to fetch menu items from CMS database.');
   }
   return res.json();
+}
+
+/**
+ * Fetch the active bundle deals from the CMS API.
+ */
+export async function fetchBundleDeals(): Promise<BundleDeal[]> {
+  const res = await fetch(`${CMS_URL}/api/promotions/bundle-deals`);
+  if (!res.ok) {
+    throw new Error('Failed to fetch bundle deals from CMS database.');
+  }
+  const data = await res.json();
+  // Filter only active deals
+  return data.filter((deal: BundleDeal) => deal.isActive);
 }
 
 /**

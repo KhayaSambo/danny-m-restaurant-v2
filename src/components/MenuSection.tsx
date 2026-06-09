@@ -3,6 +3,7 @@ import { UtensilsCrossed, AlertTriangle } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
 import { useMenuStore } from '../store/useMenuStore';
 import { useTranslation } from '../hooks/useTranslation';
+import { calculateDiscountedPrice, hasActiveSpecial } from '../utils/pricing';
 
 export const MenuSection: React.FC = () => {
   const { t } = useTranslation();
@@ -101,8 +102,15 @@ export const MenuSection: React.FC = () => {
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        <div className="absolute top-4 right-4 bg-primary text-white text-xs font-black px-4 py-1.5 rounded-full shadow-lg border border-primary-light/10">
-                          R {item.price.toFixed(2)}
+                        <div className="absolute top-4 right-4 bg-primary text-white text-xs font-black px-4 py-1.5 rounded-full shadow-lg border border-primary-light/10 flex flex-col items-end">
+                          {hasActiveSpecial(item) ? (
+                            <>
+                              <span className="text-[9px] line-through text-white/70">R {item.price.toFixed(2)}</span>
+                              <span>R {calculateDiscountedPrice(item).toFixed(2)}</span>
+                            </>
+                          ) : (
+                            <span>R {item.price.toFixed(2)}</span>
+                          )}
                         </div>
 
                         {/* Sold out indicators */}
@@ -116,8 +124,15 @@ export const MenuSection: React.FC = () => {
                       </div>
                     ) : (
                       <div className="p-6 pt-12 relative flex flex-col items-center">
-                        <div className="absolute top-4 right-4 bg-primary text-white text-xs font-black px-4 py-1.5 rounded-full shadow-lg border border-primary-light/10">
-                          R {item.price.toFixed(2)}
+                        <div className="absolute top-4 right-4 bg-primary text-white text-xs font-black px-4 py-1.5 rounded-full shadow-lg border border-primary-light/10 flex flex-col items-end">
+                          {hasActiveSpecial(item) ? (
+                            <>
+                              <span className="text-[9px] line-through text-white/70">R {item.price.toFixed(2)}</span>
+                              <span>R {calculateDiscountedPrice(item).toFixed(2)}</span>
+                            </>
+                          ) : (
+                            <span>R {item.price.toFixed(2)}</span>
+                          )}
                         </div>
 
                         {/* Sold out indicator for no-image cards */}

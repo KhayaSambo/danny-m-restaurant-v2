@@ -1,3 +1,14 @@
+export interface SpecialOffer {
+  id: string;
+  name: string;
+  description: string | null;
+  discountType: 'PERCENTAGE' | 'FIXED';
+  discountValue: number;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+}
+
 export interface MenuItem {
   id: string;
   name: string;
@@ -6,14 +17,32 @@ export interface MenuItem {
   image: string | null;
   stock: number;
   isAvailable: boolean;
+  isChefRecommend?: boolean;
   categoryId: string | null;
   primaryStarchOptions?: string | null;
   complementarySaladOptions?: string | null;
   sideVeggieOptions?: string | null;
   addOnSides?: string | null;
   beverages?: string | null;
+  specialOffers?: SpecialOffer[];
 }
 
+export interface BundleItem {
+  id: string;
+  bundleDealId: string;
+  menuItemId: string;
+  quantity: number;
+  menuItem?: MenuItem;
+}
+
+export interface BundleDeal {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  isActive: boolean;
+  items: BundleItem[];
+}
 export interface Category {
   id: string;
   name: string;

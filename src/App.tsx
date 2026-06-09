@@ -10,6 +10,7 @@ import type { User as SupaUser } from '@supabase/supabase-js';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { SignatureSpecials } from './components/SignatureSpecials';
+import { PromotionsSection } from './components/PromotionsSection';
 import { About } from './components/About';
 import { MenuSection } from './components/MenuSection';
 import { Footer } from './components/Footer';
@@ -227,6 +228,9 @@ const App: React.FC = () => {
 
       {/* Hero Section */}
       <Hero />
+
+      {/* Promotions and Specials */}
+      <PromotionsSection />
 
       {/* Recommended Specials */}
       <SignatureSpecials />

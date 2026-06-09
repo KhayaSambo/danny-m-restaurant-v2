@@ -34,6 +34,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<'google' | 'apple' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
   const { t } = useTranslation();
 
   // validation/shake states
@@ -41,6 +42,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [emailShaking, setEmailShaking] = useState(false);
   const [otpError, setOtpError] = useState(false);
   const [otpShaking, setOtpShaking] = useState(false);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    const closeMs = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--modal-close-dur")
+    ) || 150;
+    setTimeout(() => {
+      onClose();
+      setIsClosing(false);
+    }, closeMs);
+  };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
@@ -105,7 +117,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       if (error) throw error;
       if (data.user) {
         onSuccess(data.user);
-        onClose();
+        handleClose();
       }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Invalid OTP. Please try again.';
@@ -161,9 +173,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-bg-card border border-white/10 p-8 rounded-[2rem] shadow-2xl relative animate-in zoom-in-95 duration-200">
-        <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors cursor-pointer">
+    <div 
+      className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${!isClosing ? 'opacity-100' : 'opacity-0'}`}
+      onClick={handleClose}
+    >
+      <div 
+        className={`w-full max-w-md bg-bg-card border border-white/10 p-8 rounded-[2rem] shadow-2xl relative t-modal ${!isClosing ? 'is-open' : 'is-closing'}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button onClick={handleClose} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors cursor-pointer">
           <X className="w-4 h-4" />
         </button>
         

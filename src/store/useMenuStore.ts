@@ -1,9 +1,10 @@
 import { create } from 'zustand';
-import type { Category, MenuItem } from '../types';
-import { fetchMenu } from '../lib/api';
+import type { Category, MenuItem, BundleDeal } from '../types';
+import { fetchMenu, fetchBundleDeals } from '../lib/api';
 
 interface MenuState {
   categories: Category[];
+  bundleDeals: BundleDeal[];
   loading: boolean;
   error: string | null;
   selectedCategoryId: string;
@@ -17,6 +18,7 @@ interface MenuState {
 
 export const useMenuStore = create<MenuState>((set, get) => ({
   categories: [],
+  bundleDeals: [],
   loading: true,
   error: null,
   selectedCategoryId: 'all',
@@ -26,8 +28,11 @@ export const useMenuStore = create<MenuState>((set, get) => ({
   loadMenu: async () => {
     try {
       set({ loading: true, error: null });
-      const data = await fetchMenu();
-      set({ categories: data, loading: false });
+      const [menuData, bundlesData] = await Promise.all([
+        fetchMenu(),
+        fetchBundleDeals()
+      ]);
+      set({ categories: menuData, bundleDeals: bundlesData, loading: false });
     } catch (err: unknown) {
       console.error('Error in loadMenu store action:', err);
       const errMsg = err instanceof Error ? err.message : String(err);

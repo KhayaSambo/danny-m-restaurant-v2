@@ -1,11 +1,13 @@
-import React from 'react';
-import { ChefHat, Check, Flame } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChefHat, Check, Flame, ZoomIn } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
 import { safeJsonParse, parseExtraPrice } from '../utils/helpers';
+import { calculateDiscountedPrice, hasActiveSpecial } from '../utils/pricing';
 
 export const CustomizerModal: React.FC = () => {
   const activeCustomizerItem = useCartStore((state) => state.activeCustomizerItem);
   const isCustomizerClosing = useCartStore((state) => state.isCustomizerClosing);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const customStarch = useCartStore((state) => state.customStarch);
   const customSalad = useCartStore((state) => state.customSalad);
   const customVeggie = useCartStore((state) => state.customVeggie);
@@ -37,7 +39,8 @@ export const CustomizerModal: React.FC = () => {
   const beveragesList = safeJsonParse<CustomizerOption[]>(item.beverages, []);
 
   // Calculate compound price
-  let runningPrice = item.price;
+  const basePrice = calculateDiscountedPrice(item);
+  let runningPrice = basePrice;
   extrasList.forEach((extra) => {
     if (customExtras[extra.name]) {
       runningPrice += parseExtraPrice(extra.price);
@@ -102,12 +105,19 @@ export const CustomizerModal: React.FC = () => {
           {/* Hero Dish Showcase */}
           <div className="flex flex-col sm:flex-row items-center gap-6 bg-bg-dark/40 border border-white/5 rounded-3xl p-5 shadow-inner">
             {item.image && item.image !== 'null' && item.image !== '' && (
-              <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary bg-bg-dark shadow-[0_10px_25px_rgba(0,0,0,0.5)] flex-shrink-0">
+              <div
+                onClick={() => setZoomedImage(item.image || null)}
+                className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary bg-bg-dark shadow-[0_10px_25px_rgba(0,0,0,0.5)] flex-shrink-0 cursor-zoom-in relative group/image transition-transform duration-300 hover:scale-105"
+                title="Click to view full plate"
+              >
                 <img
                   src={item.image}
                   alt={item.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover/image:scale-110"
                 />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image:opacity-100 flex items-center justify-center transition-opacity duration-300">
+                  <ZoomIn className="w-5 h-5 text-white" />
+                </div>
               </div>
             )}
             <div className="text-center sm:text-left space-y-1.5">
@@ -262,7 +272,12 @@ export const CustomizerModal: React.FC = () => {
         {/* Dynamic Compound Cost & Add to Plate button */}
         <div className="border-t border-white/10 bg-bg-dark/65 backdrop-blur-md p-6 flex flex-col sm:flex-row justify-between items-center gap-4 flex-shrink-0">
           <div className="text-center sm:text-left">
-            <span className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Compound Cost</span>
+            <span className="text-[9px] uppercase tracking-wider text-white/40 font-bold flex items-center gap-2 mb-1">
+              Compound Cost
+              {hasActiveSpecial(item) && (
+                <span className="text-primary-light bg-primary/20 px-1.5 py-0.5 rounded uppercase tracking-widest text-[8px]">Special Applied!</span>
+              )}
+            </span>
             <span className="text-2xl font-black text-primary-light">R {runningPrice.toFixed(2)}</span>
           </div>
           <button
@@ -275,6 +290,40 @@ export const CustomizerModal: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Lightbox Zoom Overlay */}
+      {zoomedImage && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 transition-all duration-300 animate-fade-in"
+          onClick={() => setZoomedImage(null)}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => setZoomedImage(null)}
+            className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white text-xl transition-all hover:scale-105 active:scale-95 cursor-pointer z-10"
+            aria-label="Close image zoom"
+          >
+            ✕
+          </button>
+
+          {/* Zoomed Image */}
+          <div
+            className="relative max-w-full max-h-[80vh] rounded-[2rem] overflow-hidden border-2 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={zoomedImage}
+              alt={item.name}
+              className="max-w-full max-h-[75vh] md:max-h-[80vh] object-contain"
+            />
+            {/* Overlay description */}
+            <div className="absolute bottom-0 inset-x-0 bg-black/70 backdrop-blur-xs p-6 border-t border-white/5 text-center">
+              <h4 className="font-heading text-lg font-bold text-white uppercase tracking-tight">{item.name}</h4>
+              <p className="text-white/60 text-xs mt-1">{item.description || "Traditional South African dish"}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

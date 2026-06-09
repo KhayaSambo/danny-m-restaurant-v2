@@ -396,6 +396,58 @@ export const translations = {
     }
   },
   menu: {
+    chefRecommends: {
+      en: "Chef Recommends",
+      zu: "Iziphakamiso Zika-Chef",
+      xh: "Izindululo Zika-Chef",
+      af: "Sjef se Aanbevelings",
+      nso: "Tšeo Chef a di amogelago",
+      tn: "Tse Chef a di atlegisang",
+      st: "Tse khothalletsoang ke Chef",
+      ts: "Leswi Chef a swi bumyaka",
+      ss: "Tiphakamiso Tase-Khitshi",
+      ve: "Zwine Chef a zwi themenda",
+      nr: "Iziphakamiso Zika-Chef"
+    },
+    votedBest: {
+      en: "Voted Best",
+      zu: "Ikhethwe Njengeyona Engcono",
+      xh: "Ikhethwe Njengeyona Intle",
+      af: "Verkies as die Beste",
+      nso: "E kgethilwe e le ye botse kudu",
+      tn: "E tlhophilwe e le e e di gaisang",
+      st: "E kgethilweng e le e ntle haholo",
+      ts: "Yi hlawuriwe tanihi leyi nga kahle swinene",
+      ss: "Ikhetfwe Njengeyona Lencono",
+      ve: "Yo nangwaho sa yavhudi u fhira dzothe",
+      nr: "Ikhethwe Njengeyona Engcono khulu"
+    },
+    slowBraised: {
+      en: "Slow Braised",
+      zu: "Ephekwe Kancane",
+      xh: "Ephekwe Kancinci",
+      af: "Stadig Gestoof",
+      nso: "E apeilwego ka go nanya",
+      tn: "E apeilweng ka bonya",
+      st: "E apehiloeng butle",
+      ts: "Yi swekiweke hi ku nanya",
+      ss: "Ephekwe Kancane",
+      ve: "Yo swekiwaho nga u nanya",
+      nr: "Ephekwe Buthaka"
+    },
+    classicSimmer: {
+      en: "Classic Simmer",
+      zu: "Iphekwe Ngokunensa",
+      xh: "Ephekwe Ngokunensa",
+      af: "Klassieke Prut",
+      nso: "Setlobo sa go apewa gabotse",
+      tn: "E thulilweng ka bonya",
+      st: "E apehilweng butle",
+      ts: "Yi swekiweke kahle",
+      ss: "Iphekwe Ngokunensa",
+      ve: "Yo bikwaho nga u nanya",
+      nr: "Ephekwe buthaka"
+    },
     title: {
       en: "Our Signature Specials",
       zu: "Izidlo Zethu Ezikhethekile",
@@ -460,6 +512,19 @@ export const translations = {
       ss: "Faka Ebhasketini",
       ve: "Longa kha basikithe",
       nr: "Faka Emgodleni"
+    },
+    addToPlate: {
+      en: "Add to Plate",
+      zu: "Faka Epulatini",
+      xh: "Faka Epleyitini",
+      af: "Voeg by Bord",
+      nso: "Tsenya ka poleiting",
+      tn: "Tsenya mo poleiting",
+      st: "Kenya ka poleiting",
+      ts: "Hoxa eka pulete",
+      ss: "Faka Epulatini",
+      ve: "Longa kha phuleithi",
+      nr: "Faka Epleyitini"
     },
     customize: {
       en: "Customize",
