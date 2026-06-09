@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { MenuItem, CartItem } from '../types';
+import type { MenuItem, CartItem, BundleDeal } from '../types';
 import { safeJsonParse, parseExtraPrice, getItemPrice } from '../utils/helpers';
 
 interface CartState {
@@ -22,7 +22,7 @@ interface CartState {
   fieldShaking: Record<string, boolean>;
 
   // Customizer Fields
-  activeCustomizerItem: MenuItem | null;
+  activeCustomizerItem: MenuItem | BundleDeal | null;
   isCustomizerClosing: boolean;
   customStarch: string;
   customSalad: string;
@@ -41,8 +41,8 @@ interface CartState {
   setIsSubmitting: (submitting: boolean) => void;
   setOrderSuccess: (success: boolean) => void;
   setOrderError: (error: string | null) => void;
-  incrementItem: (item: MenuItem) => void;
-  decrementItem: (item: MenuItem) => void;
+  incrementItem: (item: MenuItem | BundleDeal) => void;
+  decrementItem: (item: MenuItem | BundleDeal) => void;
   removeItem: (itemId: string) => void;
   updateItemOption: (itemId: string, field: 'selectedStarch' | 'selectedSalad' | 'selectedVeggie', value: string) => void;
   clearCart: () => void;
@@ -59,7 +59,7 @@ interface CartState {
   clearCheckoutFields: () => void;
 
   // Customizer Actions
-  setActiveCustomizerItem: (item: MenuItem | null) => void;
+  setActiveCustomizerItem: (item: MenuItem | BundleDeal | null) => void;
   setIsCustomizerClosing: (closing: boolean) => void;
   setCustomStarch: (starch: string) => void;
   setCustomSalad: (salad: string) => void;
@@ -67,7 +67,7 @@ interface CartState {
   toggleCustomExtra: (extraName: string) => void;
   toggleCustomBeverage: (bevName: string) => void;
   confirmCustomization: () => void;
-  addClick: (item: MenuItem) => void;
+  addClick: (item: MenuItem | BundleDeal) => void;
 }
 
 export const useCartStore = create<CartState>((set, get) => {
@@ -122,10 +122,12 @@ export const useCartStore = create<CartState>((set, get) => {
 
     incrementItem: (item) => {
       const { cart } = get();
-      const currentQty = cart[item.id]?.quantity || 0;
+      const isBundle = 'items' in item;
+      const itemId = isBundle ? `bundle-${item.id}` : item.id;
+      const currentQty = cart[itemId]?.quantity || 0;
 
-      if (item.stock > 0 && currentQty >= item.stock) {
-        alert(`Limit reached. Only ${item.stock} portions of ${item.name} are currently available in stock.`);
+      if (!isBundle && (item as MenuItem).stock > 0 && currentQty >= (item as MenuItem).stock) {
+        alert(`Limit reached. Only ${(item as MenuItem).stock} portions of ${(item as MenuItem).name} are currently available in stock.`);
         return;
       }
 
@@ -135,14 +137,16 @@ export const useCartStore = create<CartState>((set, get) => {
 
       const newCart = {
         ...cart,
-        [item.id]: {
-          item,
+        [itemId]: {
+          item: isBundle ? undefined : (item as MenuItem),
+          bundle: isBundle ? (item as BundleDeal) : undefined,
+          isBundle,
           quantity: currentQty + 1,
-          selectedStarch: cart[item.id]?.selectedStarch || (starches[0] || undefined),
-          selectedSalad: cart[item.id]?.selectedSalad || (salads[0] || undefined),
-          selectedVeggie: cart[item.id]?.selectedVeggie || (veggies[0] || undefined),
-          selectedExtras: cart[item.id]?.selectedExtras || [],
-          selectedBeverages: cart[item.id]?.selectedBeverages || []
+          selectedStarch: cart[itemId]?.selectedStarch || (starches[0] || undefined),
+          selectedSalad: cart[itemId]?.selectedSalad || (salads[0] || undefined),
+          selectedVeggie: cart[itemId]?.selectedVeggie || (veggies[0] || undefined),
+          selectedExtras: cart[itemId]?.selectedExtras || [],
+          selectedBeverages: cart[itemId]?.selectedBeverages || []
         }
       };
 
@@ -152,14 +156,16 @@ export const useCartStore = create<CartState>((set, get) => {
 
     decrementItem: (item) => {
       const { cart } = get();
-      const currentQty = cart[item.id]?.quantity || 0;
+      const isBundle = 'items' in item;
+      const itemId = isBundle ? `bundle-${item.id}` : item.id;
+      const currentQty = cart[itemId]?.quantity || 0;
       const newCart = { ...cart };
 
       if (currentQty <= 1) {
-        delete newCart[item.id];
+        delete newCart[itemId];
       } else {
-        newCart[item.id] = {
-          ...cart[item.id],
+        newCart[itemId] = {
+          ...cart[itemId],
           quantity: currentQty - 1
         };
       }
@@ -347,12 +353,16 @@ export const useCartStore = create<CartState>((set, get) => {
         .filter((bev) => customBeverages[bev.name])
         .map((bev) => ({ name: bev.name, price: parseExtraPrice(bev.price) }));
 
-      const currentQty = cart[activeCustomizerItem.id]?.quantity || 0;
+      const isBundle = 'items' in activeCustomizerItem;
+      const itemId = isBundle ? `bundle-${activeCustomizerItem.id}` : activeCustomizerItem.id;
+      const currentQty = cart[itemId]?.quantity || 0;
 
       const newCart = {
         ...cart,
-        [activeCustomizerItem.id]: {
-          item: activeCustomizerItem,
+        [itemId]: {
+          item: isBundle ? undefined : (activeCustomizerItem as MenuItem),
+          bundle: isBundle ? (activeCustomizerItem as BundleDeal) : undefined,
+          isBundle,
           quantity: currentQty + 1,
           selectedStarch: customStarch || (starches[0] || undefined),
           selectedSalad: customSalad || (salads[0] || undefined),
@@ -376,7 +386,26 @@ export const useCartStore = create<CartState>((set, get) => {
       if (starches.length > 0 || salads.length > 0 || veggies.length > 0 || extras.length > 0 || bevs.length > 0) {
         get().setActiveCustomizerItem(item);
       } else {
-        get().incrementItem(item);
+        const isBundle = 'items' in item;
+        if (isBundle) {
+          const itemId = `bundle-${item.id}`;
+          const { cart } = get();
+          const currentQty = cart[itemId]?.quantity || 0;
+          const newCart = {
+            ...cart,
+            [itemId]: {
+              bundle: item as BundleDeal,
+              isBundle: true,
+              quantity: currentQty + 1,
+              selectedExtras: [],
+              selectedBeverages: []
+            }
+          };
+          localStorage.setItem('danny-m-cart', JSON.stringify(newCart));
+          set({ cart: newCart });
+        } else {
+          get().incrementItem(item);
+        }
       }
     }
   };

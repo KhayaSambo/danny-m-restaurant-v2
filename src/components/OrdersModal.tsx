@@ -9,7 +9,8 @@ import type { User as SupaUser } from '@supabase/supabase-js';
 import { useTranslation } from '../hooks/useTranslation';
 
 export interface PastOrderItem {
-  menuItemId: string;
+  menuItemId?: string | null;
+  bundleDealId?: string | null;
   quantity: number;
   name?: string;
   priceAtTime?: number;
@@ -36,6 +37,7 @@ export const OrdersModal: React.FC<OrdersModalProps> = ({ user, isOpen, onClose 
   const setCart = useCartStore((state) => state.setCart);
   const setIsCartOpen = useCartStore((state) => state.setIsCartOpen);
   const categories = useMenuStore((state) => state.categories);
+  const bundleDeals = useMenuStore((state) => state.bundleDeals);
 
   useEffect(() => {
     if (!isOpen || !user) return;
@@ -99,20 +101,42 @@ export const OrdersModal: React.FC<OrdersModalProps> = ({ user, isOpen, onClose 
     });
     
     orderItems.forEach((orderItem) => {
-      const item = allMenuItems.find(i => i.id === orderItem.menuItemId);
-      if (item) {
-        if (newCart[item.id]) {
-          newCart[item.id].quantity += orderItem.quantity;
-        } else {
-          newCart[item.id] = {
-            item,
-            quantity: orderItem.quantity,
-            selectedStarch: orderItem.selectedStarch || undefined,
-            selectedSalad: orderItem.selectedSalad || undefined,
-            selectedVeggie: orderItem.selectedVeggie || undefined,
-            selectedExtras: orderItem.selectedExtras || [],
-            selectedBeverages: orderItem.selectedBeverages || []
-          };
+      if (orderItem.bundleDealId) {
+        const bundle = bundleDeals.find(b => b.id === orderItem.bundleDealId);
+        if (bundle) {
+          const cartKey = `bundle-${bundle.id}`;
+          if (newCart[cartKey]) {
+            newCart[cartKey].quantity += orderItem.quantity;
+          } else {
+            newCart[cartKey] = {
+              bundle,
+              isBundle: true,
+              quantity: orderItem.quantity,
+              selectedStarch: orderItem.selectedStarch || undefined,
+              selectedSalad: orderItem.selectedSalad || undefined,
+              selectedVeggie: orderItem.selectedVeggie || undefined,
+              selectedExtras: orderItem.selectedExtras || [],
+              selectedBeverages: orderItem.selectedBeverages || []
+            };
+          }
+        }
+      } else {
+        const item = allMenuItems.find(i => i.id === orderItem.menuItemId);
+        if (item) {
+          if (newCart[item.id]) {
+            newCart[item.id].quantity += orderItem.quantity;
+          } else {
+            newCart[item.id] = {
+              item,
+              isBundle: false,
+              quantity: orderItem.quantity,
+              selectedStarch: orderItem.selectedStarch || undefined,
+              selectedSalad: orderItem.selectedSalad || undefined,
+              selectedVeggie: orderItem.selectedVeggie || undefined,
+              selectedExtras: orderItem.selectedExtras || [],
+              selectedBeverages: orderItem.selectedBeverages || []
+            };
+          }
         }
       }
     });

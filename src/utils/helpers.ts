@@ -30,7 +30,9 @@ export function parseExtraPrice(priceStr: string | number | undefined): number {
  * Calculates the total unit price of a cart item including selected extras and beverages.
  */
 export function getItemPrice(cartItem: CartItem): number {
-  let price = calculateDiscountedPrice(cartItem.item);
+  let price = cartItem.isBundle && cartItem.bundle
+    ? cartItem.bundle.price
+    : calculateDiscountedPrice(cartItem.item!);
   if (cartItem.selectedExtras) {
     price += cartItem.selectedExtras.reduce((sum, extra) => sum + extra.price, 0);
   }

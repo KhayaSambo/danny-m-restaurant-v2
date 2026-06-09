@@ -3,6 +3,7 @@ import { ChefHat, Check, Flame, ZoomIn } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
 import { safeJsonParse, parseExtraPrice } from '../utils/helpers';
 import { calculateDiscountedPrice, hasActiveSpecial } from '../utils/pricing';
+import type { MenuItem, BundleDeal } from '../types';
 
 export const CustomizerModal: React.FC = () => {
   const activeCustomizerItem = useCartStore((state) => state.activeCustomizerItem);
@@ -32,6 +33,7 @@ export const CustomizerModal: React.FC = () => {
   }
 
   const item = activeCustomizerItem;
+  const isBundle = 'items' in item;
   const starches = safeJsonParse<string[]>(item.primaryStarchOptions, []);
   const salads = safeJsonParse<string[]>(item.complementarySaladOptions, []);
   const veggies = safeJsonParse<string[]>(item.sideVeggieOptions, []);
@@ -39,8 +41,11 @@ export const CustomizerModal: React.FC = () => {
   const beveragesList = safeJsonParse<CustomizerOption[]>(item.beverages, []);
 
   // Calculate compound price
-  const basePrice = calculateDiscountedPrice(item);
+  const basePrice = isBundle ? item.price : calculateDiscountedPrice(item as MenuItem);
   let runningPrice = basePrice;
+  const displayImage = isBundle
+    ? (item.items?.map(i => i.menuItem?.image).filter(Boolean)[0] || 'https://img.mrdfood.com/300x0/data/355b1dff-dc06-42e8-9add-02c2e9a04feb.jpeg')
+    : item.image;
   extrasList.forEach((extra) => {
     if (customExtras[extra.name]) {
       runningPrice += parseExtraPrice(extra.price);
@@ -104,22 +109,22 @@ export const CustomizerModal: React.FC = () => {
 
           {/* Hero Dish Showcase */}
           <div className="flex flex-col sm:flex-row items-center gap-6 bg-bg-dark/40 border border-white/5 rounded-3xl p-5 shadow-inner">
-            {item.image && item.image !== 'null' && item.image !== '' && (
-              <div
-                onClick={() => setZoomedImage(item.image || null)}
-                className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary bg-bg-dark shadow-[0_10px_25px_rgba(0,0,0,0.5)] flex-shrink-0 cursor-zoom-in relative group/image transition-transform duration-300 hover:scale-105"
-                title="Click to view full plate"
-              >
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover/image:scale-110"
-                />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image:opacity-100 flex items-center justify-center transition-opacity duration-300">
-                  <ZoomIn className="w-5 h-5 text-white" />
-                </div>
+          {displayImage && displayImage !== 'null' && displayImage !== '' && (
+            <div
+              onClick={() => setZoomedImage(displayImage || null)}
+              className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary bg-bg-dark shadow-[0_10px_25px_rgba(0,0,0,0.5)] flex-shrink-0 cursor-zoom-in relative group/image transition-transform duration-300 hover:scale-105"
+              title="Click to view full plate"
+            >
+              <img
+                src={displayImage}
+                alt={item.name}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover/image:scale-110"
+              />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image:opacity-100 flex items-center justify-center transition-opacity duration-300">
+                <ZoomIn className="w-5 h-5 text-white" />
               </div>
-            )}
+            </div>
+          )}
             <div className="text-center sm:text-left space-y-1.5">
               <h4 className="font-heading text-lg font-bold text-white uppercase tracking-tight">{item.name}</h4>
               <p className="text-white/60 text-xs leading-relaxed max-w-md">
@@ -274,7 +279,7 @@ export const CustomizerModal: React.FC = () => {
           <div className="text-center sm:text-left">
             <span className="text-[9px] uppercase tracking-wider text-white/40 font-bold flex items-center gap-2 mb-1">
               Compound Cost
-              {hasActiveSpecial(item) && (
+              {!isBundle && hasActiveSpecial(item as MenuItem) && (
                 <span className="text-primary-light bg-primary/20 px-1.5 py-0.5 rounded uppercase tracking-widest text-[8px]">Special Applied!</span>
               )}
             </span>

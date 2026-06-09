@@ -33,6 +33,7 @@ export const PromotionsSection: React.FC = () => {
     extraImages?: string[];
     isBundle: boolean;
     menuItem?: typeof allMenuItems[0];
+    bundleItem?: typeof bundleDeals[0];
   };
 
   const displayItems: DisplayPromo[] = [
@@ -47,6 +48,7 @@ export const PromotionsSection: React.FC = () => {
         image: allImages[0] || 'https://img.mrdfood.com/300x0/data/355b1dff-dc06-42e8-9add-02c2e9a04feb.jpeg',
         extraImages: allImages.slice(1) as string[],
         isBundle: true,
+        bundleItem: bundle,
       };
     }),
     ...specialItems.map(item => ({
@@ -173,35 +175,64 @@ export const PromotionsSection: React.FC = () => {
                     </div>
 
                     <div className="w-full">
-                      {!item.isBundle && item.menuItem ? (
-                        (cart[item.menuItem.id]?.quantity || 0) === 0 ? (
-                          <button
-                            onClick={() => addClick(item.menuItem!)}
-                            className="px-5 py-2 bg-black/35 hover:bg-black/50 border border-white/10 rounded-full font-black text-[9px] tracking-widest uppercase transition-all text-white cursor-pointer"
-                          >
-                            {t('menu.addToPlate')}
-                          </button>
-                        ) : (
-                          <div className="flex items-center justify-between w-28 bg-black/40 rounded-full p-0.5 border border-white/10">
+                      {item.isBundle ? (
+                        (() => {
+                          const bundle = item.bundleItem!;
+                          const qty = cart[`bundle-${bundle.id}`]?.quantity || 0;
+                          return qty === 0 ? (
                             <button
-                              onClick={() => decrementItem(item.menuItem!)}
-                              className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-black text-white hover:bg-white/10 cursor-pointer"
+                              onClick={() => addClick(bundle)}
+                              className="px-5 py-2 bg-black/35 hover:bg-black/50 border border-white/10 rounded-full font-black text-[9px] tracking-widest uppercase transition-all text-white cursor-pointer"
                             >
-                              −
+                              {t('menu.addToPlate')}
                             </button>
-                            <span className="text-xs font-black text-white">{cart[item.menuItem.id].quantity}</span>
-                            <button
-                              onClick={() => incrementItem(item.menuItem!)}
-                              className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-black text-white hover:bg-white/10 cursor-pointer"
-                            >
-                              +
-                            </button>
-                          </div>
-                        )
+                          ) : (
+                            <div className="flex items-center justify-between w-28 bg-black/40 rounded-full p-0.5 border border-white/10">
+                              <button
+                                onClick={() => decrementItem(bundle)}
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-black text-white hover:bg-white/10 cursor-pointer"
+                              >
+                                −
+                              </button>
+                              <span className="text-xs font-black text-white">{qty}</span>
+                              <button
+                                onClick={() => incrementItem(bundle)}
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-black text-white hover:bg-white/10 cursor-pointer"
+                              >
+                                +
+                              </button>
+                            </div>
+                          );
+                        })()
                       ) : (
-                        <div className="text-[10px] font-bold text-white/70 uppercase tracking-widest">
-                          Bundle Deal Active
-                        </div>
+                        (() => {
+                          const menuItem = item.menuItem!;
+                          const qty = cart[menuItem.id]?.quantity || 0;
+                          return qty === 0 ? (
+                            <button
+                              onClick={() => addClick(menuItem)}
+                              className="px-5 py-2 bg-black/35 hover:bg-black/50 border border-white/10 rounded-full font-black text-[9px] tracking-widest uppercase transition-all text-white cursor-pointer"
+                            >
+                              {t('menu.addToPlate')}
+                            </button>
+                          ) : (
+                            <div className="flex items-center justify-between w-28 bg-black/40 rounded-full p-0.5 border border-white/10">
+                              <button
+                                onClick={() => decrementItem(menuItem)}
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-black text-white hover:bg-white/10 cursor-pointer"
+                              >
+                                −
+                              </button>
+                              <span className="text-xs font-black text-white">{qty}</span>
+                              <button
+                                onClick={() => incrementItem(menuItem)}
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-black text-white hover:bg-white/10 cursor-pointer"
+                              >
+                                +
+                              </button>
+                            </div>
+                          );
+                        })()
                       )}
                     </div>
                   </div>

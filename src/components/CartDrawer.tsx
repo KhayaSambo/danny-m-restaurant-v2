@@ -123,7 +123,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
         if (entry.selectedBeverages && entry.selectedBeverages.length > 0) {
           choices.push(`Beverages: ${entry.selectedBeverages.map(b => b.name).join(', ')}`);
         }
-        return choices.length > 0 ? `${entry.item.name} (${choices.join(', ')})` : '';
+        const name = entry.isBundle ? entry.bundle!.name : entry.item!.name;
+        return choices.length > 0 ? `${name} (${choices.join(', ')})` : '';
       }).filter(Boolean).join(' | ');
 
       const finalNotes = [notes.trim(), optionsNotes].filter(Boolean).join(' [Selections: ') + (optionsNotes ? ']' : '');
@@ -137,7 +138,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
         notes: finalNotes || undefined,
         total: totalCartPrice,
         items: cartEntries.map(entry => ({
-          menuItemId: entry.item.id,
+          menuItemId: entry.isBundle ? null : entry.item!.id,
+          bundleDealId: entry.isBundle ? entry.bundle!.id : null,
           quantity: entry.quantity,
           priceAtTime: getItemPrice(entry)
         }))
@@ -147,8 +149,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
         total: totalCartPrice,
         notes: finalNotes || null,
         supabaseItems: cartEntries.map(entry => ({
-          menuItemId: entry.item.id,
-          name: entry.item.name,
+          menuItemId: entry.isBundle ? null : entry.item!.id,
+          bundleDealId: entry.isBundle ? entry.bundle!.id : null,
+          name: entry.isBundle ? entry.bundle!.name : entry.item!.name,
           quantity: entry.quantity,
           priceAtTime: getItemPrice(entry),
           selectedStarch: entry.selectedStarch || null,
@@ -467,32 +470,49 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                   <div className="flex-1 overflow-y-auto space-y-4 pr-2">
                     <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block border-b border-white/5 pb-2">Selected Items</span>
                     {Object.values(cart).map((cartItem) => {
-                      const item = cartItem.item;
-                      const starches = safeJsonParse<string[]>(item.primaryStarchOptions, []);
-                      const salads = safeJsonParse<string[]>(item.complementarySaladOptions, []);
-                      const veggies = safeJsonParse<string[]>(item.sideVeggieOptions, []);
+                      const isBundle = cartItem.isBundle;
+                      const displayId = isBundle ? `bundle-${cartItem.bundle!.id}` : cartItem.item!.id;
+                      const targetObj = isBundle ? cartItem.bundle! : cartItem.item!;
+                      const displayName = isBundle ? cartItem.bundle!.name : cartItem.item!.name;
+                      const displayImage = isBundle ? null : cartItem.item!.image;
+
+                      const starches = safeJsonParse<string[]>(
+                        isBundle ? cartItem.bundle!.primaryStarchOptions : cartItem.item!.primaryStarchOptions,
+                        []
+                      );
+                      const salads = safeJsonParse<string[]>(
+                        isBundle ? cartItem.bundle!.complementarySaladOptions : cartItem.item!.complementarySaladOptions,
+                        []
+                      );
+                      const veggies = safeJsonParse<string[]>(
+                        isBundle ? cartItem.bundle!.sideVeggieOptions : cartItem.item!.sideVeggieOptions,
+                        []
+                      );
 
                       return (
-                        <div key={item.id} className="bg-bg-dark/40 border border-white/5 rounded-2xl p-4 space-y-3 shadow-inner">
+                        <div key={displayId} className="bg-bg-dark/40 border border-white/5 rounded-2xl p-4 space-y-3 shadow-inner">
                           <div className="flex justify-between items-start gap-4">
-                            {item.image && item.image !== 'null' && item.image !== '' && (
+                            {displayImage && displayImage !== 'null' && displayImage !== '' && (
                               <div className="w-16 h-16 rounded-full overflow-hidden border border-white/10 bg-bg-dark flex-shrink-0">
-                                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                <img src={displayImage} alt={displayName} className="w-full h-full object-cover" />
                               </div>
                             )}
 
                             <div className="flex-1 min-w-0">
                               <h4 className="font-heading font-extrabold text-sm text-white uppercase truncate tracking-tight">
-                                {item.name}
-                                {hasActiveSpecial(item) && (
+                                {displayName}
+                                {!isBundle && hasActiveSpecial(cartItem.item!) && (
                                   <span className="ml-2 bg-primary/20 text-primary-light text-[8px] px-1.5 py-0.5 rounded uppercase tracking-widest align-middle">Special</span>
+                                )}
+                                {isBundle && (
+                                  <span className="ml-2 bg-primary/20 text-primary-light text-[8px] px-1.5 py-0.5 rounded uppercase tracking-widest align-middle">Bundle</span>
                                 )}
                               </h4>
                               <span className="text-xs text-primary-light font-black block mt-0.5">R {getItemPrice(cartItem).toFixed(2)}</span>
                             </div>
 
                             <button
-                              onClick={() => removeItem(item.id)}
+                              onClick={() => removeItem(displayId)}
                               className="text-white/30 hover:text-red-500 transition-colors text-sm cursor-pointer"
                               aria-label="Remove item"
                             >
@@ -507,7 +527,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                                   <label className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Choice of Starch</label>
                                   <select
                                     value={cartItem.selectedStarch || ''}
-                                    onChange={(e) => updateItemOption(item.id, 'selectedStarch', e.target.value)}
+                                    onChange={(e) => updateItemOption(displayId, 'selectedStarch', e.target.value)}
                                     className="w-full bg-bg-dark border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/80 focus:border-primary focus:outline-none"
                                   >
                                     {starches.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -520,7 +540,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                                   <label className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Choice of Salad</label>
                                   <select
                                     value={cartItem.selectedSalad || ''}
-                                    onChange={(e) => updateItemOption(item.id, 'selectedSalad', e.target.value)}
+                                    onChange={(e) => updateItemOption(displayId, 'selectedSalad', e.target.value)}
                                     className="w-full bg-bg-dark border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/80 focus:border-primary focus:outline-none"
                                   >
                                     {salads.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -533,7 +553,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                                   <label className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Choice of Side Veggie</label>
                                   <select
                                     value={cartItem.selectedVeggie || ''}
-                                    onChange={(e) => updateItemOption(item.id, 'selectedVeggie', e.target.value)}
+                                    onChange={(e) => updateItemOption(displayId, 'selectedVeggie', e.target.value)}
                                     className="w-full bg-bg-dark border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/80 focus:border-primary focus:outline-none"
                                   >
                                     {veggies.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -577,14 +597,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                             <span className="text-[10px] uppercase text-white/30 tracking-widest font-black">Quantity</span>
                             <div className="flex items-center justify-between w-24 bg-bg-dark rounded-full p-0.5 border border-white/5">
                               <button
-                                onClick={() => decrementItem(item)}
+                                onClick={() => decrementItem(targetObj)}
                                 className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/5 cursor-pointer"
                               >
                                 −
                               </button>
                               <span className="text-xs font-black text-white">{cartItem.quantity}</span>
                               <button
-                                onClick={() => incrementItem(item)}
+                                onClick={() => incrementItem(targetObj)}
                                 className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/5 cursor-pointer"
                               >
                                 +
@@ -691,32 +711,49 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                     <div className="flex-1 overflow-y-auto space-y-4 pr-1">
                       <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase block border-b border-white/5 pb-2">Selected Items</span>
                       {Object.values(cart).map((cartItem) => {
-                        const item = cartItem.item;
-                        const starches = safeJsonParse<string[]>(item.primaryStarchOptions, []);
-                        const salads = safeJsonParse<string[]>(item.complementarySaladOptions, []);
-                        const veggies = safeJsonParse<string[]>(item.sideVeggieOptions, []);
+                        const isBundle = cartItem.isBundle;
+                        const displayId = isBundle ? `bundle-${cartItem.bundle!.id}` : cartItem.item!.id;
+                        const targetObj = isBundle ? cartItem.bundle! : cartItem.item!;
+                        const displayName = isBundle ? cartItem.bundle!.name : cartItem.item!.name;
+                        const displayImage = isBundle ? null : cartItem.item!.image;
+
+                        const starches = safeJsonParse<string[]>(
+                          isBundle ? cartItem.bundle!.primaryStarchOptions : cartItem.item!.primaryStarchOptions,
+                          []
+                        );
+                        const salads = safeJsonParse<string[]>(
+                          isBundle ? cartItem.bundle!.complementarySaladOptions : cartItem.item!.complementarySaladOptions,
+                          []
+                        );
+                        const veggies = safeJsonParse<string[]>(
+                          isBundle ? cartItem.bundle!.sideVeggieOptions : cartItem.item!.sideVeggieOptions,
+                          []
+                        );
 
                         return (
-                          <div key={item.id} className="bg-bg-dark/40 border border-white/5 rounded-2xl p-4 space-y-3">
+                          <div key={displayId} className="bg-bg-dark/40 border border-white/5 rounded-2xl p-4 space-y-3">
                             <div className="flex justify-between items-start gap-4">
-                              {item.image && item.image !== 'null' && item.image !== '' && (
+                              {displayImage && displayImage !== 'null' && displayImage !== '' && (
                                 <div className="w-16 h-16 rounded-full overflow-hidden border border-white/10 bg-bg-dark flex-shrink-0">
-                                  <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                  <img src={displayImage} alt={displayName} className="w-full h-full object-cover" />
                                 </div>
                               )}
 
                               <div className="flex-1 min-w-0">
                                 <h4 className="font-heading font-extrabold text-sm text-white uppercase truncate tracking-tight">
-                                  {item.name}
-                                  {hasActiveSpecial(item) && (
+                                  {displayName}
+                                  {!isBundle && hasActiveSpecial(cartItem.item!) && (
                                     <span className="ml-2 bg-primary/20 text-primary-light text-[8px] px-1.5 py-0.5 rounded uppercase tracking-widest align-middle">Special</span>
+                                  )}
+                                  {isBundle && (
+                                    <span className="ml-2 bg-primary/20 text-primary-light text-[8px] px-1.5 py-0.5 rounded uppercase tracking-widest align-middle">Bundle</span>
                                   )}
                                 </h4>
                                 <span className="text-xs text-primary-light font-black block mt-0.5">R {getItemPrice(cartItem).toFixed(2)}</span>
                               </div>
 
                               <button
-                                onClick={() => removeItem(item.id)}
+                                onClick={() => removeItem(displayId)}
                                 className="text-white/30 hover:text-red-500 transition-colors text-sm cursor-pointer"
                               >
                                 ✕
@@ -730,7 +767,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                                     <label className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Choice of Starch</label>
                                     <select
                                       value={cartItem.selectedStarch || ''}
-                                      onChange={(e) => updateItemOption(item.id, 'selectedStarch', e.target.value)}
+                                      onChange={(e) => updateItemOption(displayId, 'selectedStarch', e.target.value)}
                                       className="w-full bg-bg-dark border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/80 focus:border-primary focus:outline-none"
                                     >
                                       {starches.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -742,7 +779,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                                     <label className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Choice of Salad</label>
                                     <select
                                       value={cartItem.selectedSalad || ''}
-                                      onChange={(e) => updateItemOption(item.id, 'selectedSalad', e.target.value)}
+                                      onChange={(e) => updateItemOption(displayId, 'selectedSalad', e.target.value)}
                                       className="w-full bg-bg-dark border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/80 focus:border-primary focus:outline-none"
                                     >
                                       {salads.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -754,7 +791,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                                     <label className="text-[9px] uppercase tracking-wider text-white/40 font-bold block">Choice of Side Veggie</label>
                                     <select
                                       value={cartItem.selectedVeggie || ''}
-                                      onChange={(e) => updateItemOption(item.id, 'selectedVeggie', e.target.value)}
+                                      onChange={(e) => updateItemOption(displayId, 'selectedVeggie', e.target.value)}
                                       className="w-full bg-bg-dark border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/80 focus:border-primary focus:outline-none"
                                     >
                                       {veggies.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -798,14 +835,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                               <span className="text-[10px] uppercase text-white/30 tracking-widest font-black">Quantity</span>
                               <div className="flex items-center justify-between w-24 bg-bg-dark rounded-full p-0.5 border border-white/5">
                                 <button
-                                  onClick={() => decrementItem(item)}
+                                  onClick={() => decrementItem(targetObj)}
                                   className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/5 cursor-pointer"
                                 >
                                   −
                                 </button>
                                 <span className="text-xs font-black text-white">{cartItem.quantity}</span>
                                 <button
-                                  onClick={() => incrementItem(item)}
+                                  onClick={() => incrementItem(targetObj)}
                                   className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/5 cursor-pointer"
                                 >
                                   +

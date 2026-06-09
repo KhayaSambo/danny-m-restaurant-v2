@@ -42,6 +42,10 @@ export interface BundleDeal {
   price: number;
   isActive: boolean;
   items: BundleItem[];
+  primaryStarchOptions?: string | null;
+  complementarySaladOptions?: string | null;
+  sideVeggieOptions?: string | null;
+  addOnSides?: string | null;
 }
 export interface Category {
   id: string;
@@ -50,7 +54,9 @@ export interface Category {
 }
 
 export interface CartItem {
-  item: MenuItem;
+  item?: MenuItem;
+  bundle?: BundleDeal;
+  isBundle: boolean;
   quantity: number;
   selectedStarch?: string;
   selectedSalad?: string;
