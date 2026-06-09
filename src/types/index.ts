@@ -25,6 +25,9 @@ export interface MenuItem {
   addOnSides?: string | null;
   beverages?: string | null;
   specialOffers?: SpecialOffer[];
+  isSpecial?: boolean;
+  availableFrom?: string | null;
+  availableUntil?: string | null;
 }
 
 export interface BundleItem {

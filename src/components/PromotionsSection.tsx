@@ -18,8 +18,8 @@ export const PromotionsSection: React.FC = () => {
 
   const allMenuItems = categories.flatMap(cat => cat.menuItems);
 
-  // Get items with active specials
-  const specialItems = allMenuItems.filter(item => hasActiveSpecial(item));
+  // Get items with active specials OR marked as isSpecial
+  const specialItems = allMenuItems.filter(item => hasActiveSpecial(item) || item.isSpecial);
 
   // Combine bundles and specials for display
   type DisplayPromo = {
@@ -51,18 +51,21 @@ export const PromotionsSection: React.FC = () => {
         bundleItem: bundle,
       };
     }),
-    ...specialItems.map(item => ({
-      id: `special-${item.id}`,
-      title: item.name,
-      description: item.description || item.specialOffers?.[0]?.name || 'Special Offer!',
-      price: calculateDiscountedPrice(item),
-      originalPrice: item.price,
-      badge: 'Special Offer',
-      image: item.image || 'https://img.mrdfood.com/300x0/data/2b699b02-c496-4142-a51b-bd9897e4964f.jpeg',
-      extraImages: [],
-      isBundle: false,
-      menuItem: item,
-    }))
+    ...specialItems.map(item => {
+      const hasSpecialOffer = hasActiveSpecial(item);
+      return {
+        id: `special-${item.id}`,
+        title: item.name,
+        description: item.description || item.specialOffers?.[0]?.name || 'Special Showcase!',
+        price: hasSpecialOffer ? calculateDiscountedPrice(item) : item.price,
+        originalPrice: hasSpecialOffer ? item.price : undefined,
+        badge: item.isSpecial ? 'Chef Special' : 'Special Offer',
+        image: item.image || 'https://img.mrdfood.com/300x0/data/2b699b02-c496-4142-a51b-bd9897e4964f.jpeg',
+        extraImages: [],
+        isBundle: false,
+        menuItem: item,
+      };
+    })
   ];
 
   if (displayItems.length === 0) {

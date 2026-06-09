@@ -32,7 +32,26 @@ export const useMenuStore = create<MenuState>((set, get) => ({
         fetchMenu(),
         fetchBundleDeals()
       ]);
-      set({ categories: menuData, bundleDeals: bundlesData, loading: false });
+
+      const now = new Date();
+      const filteredMenuData = menuData.map(cat => ({
+        ...cat,
+        menuItems: cat.menuItems.filter(item => {
+          if (item.availableFrom) {
+            const fromDate = new Date(item.availableFrom);
+            fromDate.setHours(0, 0, 0, 0);
+            if (fromDate > now) return false;
+          }
+          if (item.availableUntil) {
+            const untilDate = new Date(item.availableUntil);
+            untilDate.setHours(23, 59, 59, 999);
+            if (untilDate < now) return false;
+          }
+          return true;
+        })
+      }));
+
+      set({ categories: filteredMenuData, bundleDeals: bundlesData, loading: false });
     } catch (err: unknown) {
       console.error('Error in loadMenu store action:', err);
       const errMsg = err instanceof Error ? err.message : String(err);
