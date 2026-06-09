@@ -49,6 +49,7 @@ export interface BundleDeal {
   complementarySaladOptions?: string | null;
   sideVeggieOptions?: string | null;
   addOnSides?: string | null;
+  beverages?: string | null;
 }
 export interface Category {
   id: string;

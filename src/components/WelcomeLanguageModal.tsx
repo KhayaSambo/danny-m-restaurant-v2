@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLanguageStore, LANGUAGES, type LanguageCode } from '../store/useLanguageStore';
 import { Sparkles, Heart } from 'lucide-react';
 

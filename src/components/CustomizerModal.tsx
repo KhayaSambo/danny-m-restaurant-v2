@@ -3,7 +3,7 @@ import { ChefHat, Check, Flame, ZoomIn } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
 import { safeJsonParse, parseExtraPrice } from '../utils/helpers';
 import { calculateDiscountedPrice, hasActiveSpecial } from '../utils/pricing';
-import type { MenuItem, BundleDeal } from '../types';
+import type { MenuItem } from '../types';
 
 export const CustomizerModal: React.FC = () => {
   const activeCustomizerItem = useCartStore((state) => state.activeCustomizerItem);
