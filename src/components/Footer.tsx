@@ -2,7 +2,12 @@ import React from 'react';
 import { MapPin, Clock, Info, CreditCard, Package } from 'lucide-react';
 import { useTranslation } from '../hooks/useTranslation';
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+  onOpenPrivacy: () => void;
+  onOpenCookies: () => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy, onOpenCookies }) => {
   const { t } = useTranslation();
 
   return (
@@ -67,8 +72,19 @@ export const Footer: React.FC = () => {
 
       </div>
 
-      <div className="border-t border-white/5 pt-12 text-center text-white/30 text-xs">
-        &copy; {new Date().getFullYear()} Danny M Restaurant. The Taste of Ubuntu. {t('footer.rights')}
+      <div className="border-t border-white/5 pt-12 text-center text-white/30 text-xs space-y-3">
+        <div>
+          &copy; {new Date().getFullYear()} Danny M Restaurant. The Taste of Ubuntu. {t('footer.rights')}
+        </div>
+        <div className="flex flex-wrap justify-center gap-4 text-[9px] uppercase tracking-widest font-black text-white/40">
+          <button onClick={onOpenPrivacy} className="hover:text-primary-light transition-colors cursor-pointer focus:outline-none">
+            {t('popia.privacyPolicy')}
+          </button>
+          <span>•</span>
+          <button onClick={onOpenCookies} className="hover:text-primary-light transition-colors cursor-pointer focus:outline-none">
+            {t('popia.cookieSettings')}
+          </button>
+        </div>
       </div>
     </footer>
   );

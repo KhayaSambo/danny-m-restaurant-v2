@@ -844,5 +844,72 @@ export const translations = {
       ve: "Pfanelo dzothe dzo sirheledzwa.",
       nr: "Woke amalungelo abhengiwe."
     }
+  },
+  popia: {
+    cookieTitle: {
+      en: "Cookie Preferences",
+      zu: "Izintandokazi Ze-Cookie",
+      af: "Koekie Voorkeure"
+    },
+    cookieDesc: {
+      en: "We use cookies to optimize your experience, analyze site usage, and remember your language preferences. By clicking 'Accept All', you consent to our use of all cookies.",
+      zu: "Sisebenzisa ama-cookie ukuthuthukisa umuzwa wakho, ukuhlaziya ukusetshenziswa kwesayithi, nokukhumbula ulimi lwakho. Ngokuchofoza 'Yamukela Konke', uvumelana nokusebenzisa kwethu ama-cookie.",
+      af: "Ons gebruik koekies om jou ervaring te optimaliseer, werfgebruik te ontleed en jou taalvoorkeure te onthou. Deur op 'Aanvaar Alles' te klik, stem jy in tot ons gebruik van alle koekies."
+    },
+    acceptAll: {
+      en: "Accept All",
+      zu: "Yamukela Konke",
+      af: "Aanvaar Alles"
+    },
+    reject: {
+      en: "Reject Non-Essential",
+      zu: "Yenqaba Angadingekile",
+      af: "Weier Nie-Noodsaaklik"
+    },
+    customize: {
+      en: "Customize Preferences",
+      zu: "Lungisa Izintandokazi",
+      af: "Pas Voorkeure Aan"
+    },
+    savePreferences: {
+      en: "Save Preferences",
+      zu: "Gcina Izintandokazi",
+      af: "Stoor Voorkeure"
+    },
+    privacyPolicy: {
+      en: "Privacy Policy & POPIA",
+      zu: "Inqubomgomo Yobumfihlo ne-POPIA",
+      af: "Privaatheidsbeleid & POPIA"
+    },
+    cookieSettings: {
+      en: "Cookie Settings",
+      zu: "Izilungiselelo Ze-Cookie",
+      af: "Koekie-instellings"
+    },
+    marketingOptIn: {
+      en: "Receive special offers, promos, and menu updates (Optional)",
+      zu: "Thola izipesheli, amaphromo, nezibuyekezo zemenyu (Ongazikhetha)",
+      af: "Ontvang spesiale aanbiedinge, promosies en spyskaartopdaterings (Opsioneel)"
+    },
+    checkoutDisclaimer: {
+      en: "By placing this order, you consent to our processing of your details to fulfill your order in accordance with our Privacy Policy.",
+      zu: "Ngokufaka le-oda, uvumela ukucutshungulwa kwemininingwane yakho ukuze silungise i-oda lakho ngokuhambisana Nenqubomgomo Yobumfihlo.",
+      af: "Deur hierdie bestelling te plaas, stem jy in tot die verwerking van jou besonderhede om jou bestelling te voltooi in ooreenstemming met ons Privaatheidsbeleid."
+    },
+    authDisclaimer: {
+      en: "By signing in, you agree to our Privacy Policy and consent to the processing of your email.",
+      zu: "Ngokungena ngemvume, uvumelana Nenqubomgomo Yobumfihlo futhi uvumela ukucutshungulwa kwe-imeyili yakho.",
+      af: "Deur aan te meld, stem jy in tot ons Privaatheidsbeleid en die verwerking van jou e-pos."
+    },
+    deleteData: {
+      en: "Delete Account & Local Data",
+      zu: "Susa I-akhawunti Nemininingwane Yasendaweni",
+      af: "Vee Rekening en Plaaslike Data Uit"
+    },
+    deleteDisclaimer: {
+      en: "This will erase all local settings, cart items, and sign you out. To request server-side order history deletion under POPIA, contact info@dannym.co.za.",
+      zu: "Lokhu kuzosusa zonke izilungiselelo zasendaweni, izinto ezisebhasketini, futhi kukukhiphe ngemvume. Ukuze ucele ukususwa komlando we-oda kuseva ngaphansi kwe-POPIA, thintana no-info@dannym.co.za.",
+      af: "Dit sal alle plaaslike instellings, waentjie-items uitvee en jou afmeld. Om skrapping van jou bestelgeskiedenis op die bediener onder POPIA te versoek, kontak info@dannym.co.za."
+    }
   }
 };

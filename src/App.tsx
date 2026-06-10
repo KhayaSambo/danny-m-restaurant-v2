@@ -20,6 +20,8 @@ import { ProfileModal } from './components/ProfileModal';
 import { OrdersModal } from './components/OrdersModal';
 import { AuthModal } from './components/AuthModal';
 import { WelcomeLanguageModal } from './components/WelcomeLanguageModal';
+import { CookieBanner } from './components/CookieBanner';
+import { PrivacyModal } from './components/PrivacyModal';
 
 const CMS_URL = import.meta.env.VITE_CMS_URL || '';
 
@@ -32,6 +34,8 @@ const App: React.FC = () => {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
   const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(() => !localStorage.getItem('danny-m-onboarded'));
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [isCookieForcedOpen, setIsCookieForcedOpen] = useState(false);
 
   // Zustand Store Selectors
   const isCartOpen = useCartStore((state) => state.isCartOpen);
@@ -67,6 +71,21 @@ const App: React.FC = () => {
   useEffect(() => {
     loadMenu();
   }, [loadMenu]);
+
+  // POPIA Privacy Deep-linking support
+  useEffect(() => {
+    const handleHashAndSearchChange = () => {
+      const params = new URLSearchParams(window.location.search);
+      const isPrivacy = params.get('privacy') === 'true' || window.location.hash === '#privacy';
+      if (isPrivacy) {
+        setIsPrivacyModalOpen(true);
+      }
+    };
+
+    handleHashAndSearchChange();
+    window.addEventListener('hashchange', handleHashAndSearchChange);
+    return () => window.removeEventListener('hashchange', handleHashAndSearchChange);
+  }, []);
 
   // 2. Supabase Auth listener
   useEffect(() => {
@@ -117,7 +136,7 @@ const App: React.FC = () => {
 
   // 5. Scroll Lock effect for open modals
   useEffect(() => {
-    const isModalActive = isCartOpen || !!activeCustomizerItem || isAuthModalOpen || isProfileModalOpen || isOrdersModalOpen || isWelcomeModalOpen;
+    const isModalActive = isCartOpen || !!activeCustomizerItem || isAuthModalOpen || isProfileModalOpen || isOrdersModalOpen || isWelcomeModalOpen || isPrivacyModalOpen;
     if (isModalActive) {
       document.body.classList.add('overflow-hidden');
     } else {
@@ -126,7 +145,7 @@ const App: React.FC = () => {
     return () => {
       document.body.classList.remove('overflow-hidden');
     };
-  }, [isCartOpen, activeCustomizerItem, isAuthModalOpen, isProfileModalOpen, isOrdersModalOpen, isWelcomeModalOpen]);
+  }, [isCartOpen, activeCustomizerItem, isAuthModalOpen, isProfileModalOpen, isOrdersModalOpen, isWelcomeModalOpen, isPrivacyModalOpen]);
 
   // 6. Reconcile Yoco Hosted Checkout Redirect Callback States (Success & Cancel)
   useEffect(() => {
@@ -242,12 +261,16 @@ const App: React.FC = () => {
       <MenuSection />
 
       {/* Styled Footer */}
-      <Footer />
+      <Footer
+        onOpenPrivacy={() => setIsPrivacyModalOpen(true)}
+        onOpenCookies={() => setIsCookieForcedOpen(true)}
+      />
 
       {/* Cart Drawer */}
       <CartDrawer
         user={user}
         setIsAuthModalOpen={setIsAuthModalOpen}
+        onOpenPrivacy={() => setIsPrivacyModalOpen(true)}
       />
 
       {/* Item Customizer Modal */}
@@ -272,6 +295,19 @@ const App: React.FC = () => {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={(loggedUser) => setUser(loggedUser)}
+        onOpenPrivacy={() => setIsPrivacyModalOpen(true)}
+      />
+
+      {/* POPIA Compliance Controls */}
+      <CookieBanner
+        onOpenPrivacy={() => setIsPrivacyModalOpen(true)}
+        forceOpen={isCookieForcedOpen}
+        onCloseForceOpen={() => setIsCookieForcedOpen(false)}
+      />
+
+      <PrivacyModal
+        isOpen={isPrivacyModalOpen}
+        onClose={() => setIsPrivacyModalOpen(false)}
       />
 
       {/* Active Order Floating Tracker Badge */}

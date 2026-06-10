@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Utensils,
   Flame,
@@ -23,10 +23,12 @@ import { useTranslation } from '../hooks/useTranslation';
 interface CartDrawerProps {
   user: SupaUser | null;
   setIsAuthModalOpen: (open: boolean) => void;
+  onOpenPrivacy: () => void;
 }
 
-export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen }) => {
+export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen, onOpenPrivacy }) => {
   const { t } = useTranslation();
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const cart = useCartStore((state) => state.cart);
   const isCartOpen = useCartStore((state) => state.isCartOpen);
   const isCartClosing = useCartStore((state) => state.isCartClosing);
@@ -164,6 +166,16 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
       };
       
       localStorage.setItem('danny-m-pending-order', JSON.stringify(pendingOrderPayload));
+
+      if (marketingOptIn && user) {
+        try {
+          await supabase.auth.updateUser({
+            data: { marketing_opt_in: true }
+          });
+        } catch (authErr) {
+          console.warn('Could not update marketing metadata:', authErr);
+        }
+      }
 
       const { data, error: yocoError } = await supabase.functions.invoke('process-yoco-payment', {
         body: {
@@ -679,6 +691,32 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                         />
                       </div>
 
+                      {/* Marketing Opt-In Checkbox */}
+                      <div className="flex items-start gap-2.5 pt-1">
+                        <input
+                          type="checkbox"
+                          id="cart-marketing-opt-in-desktop"
+                          checked={marketingOptIn}
+                          onChange={(e) => setMarketingOptIn(e.target.checked)}
+                          className="w-4 h-4 rounded border-white/10 bg-bg-dark text-primary focus:ring-primary focus:ring-offset-bg-card mt-0.5 cursor-pointer accent-primary"
+                        />
+                        <label htmlFor="cart-marketing-opt-in-desktop" className="text-[11px] text-white/60 select-none cursor-pointer leading-tight">
+                          {t('popia.marketingOptIn')}
+                        </label>
+                      </div>
+
+                      {/* POPIA Transaction Disclaimer */}
+                      <p className="text-[10px] text-white/40 leading-relaxed mt-1">
+                        By placing this order, you consent to our processing of your details to fulfill your order in accordance with our{' '}
+                        <button
+                          type="button"
+                          onClick={onOpenPrivacy}
+                          className="text-primary-light hover:underline font-bold focus:outline-none cursor-pointer inline animate-pulse-slow"
+                        >
+                          Privacy Policy
+                        </button>.
+                      </p>
+
                       <div className="bg-[#1c1513] border border-primary/20 rounded-xl p-3 text-center text-[10px] text-primary-light font-black tracking-widest uppercase mb-4 mt-2 animate-pulse-slow">
                         ● Pickup Order
                       </div>
@@ -935,6 +973,32 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                             className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.notes ? 'is-error' : ''} ${fieldShaking.notes ? 'is-shaking' : ''}`}
                           />
                         </div>
+
+                        {/* Marketing Opt-In Checkbox */}
+                        <div className="flex items-start gap-2.5 pt-1">
+                          <input
+                            type="checkbox"
+                            id="cart-marketing-opt-in-mobile"
+                            checked={marketingOptIn}
+                            onChange={(e) => setMarketingOptIn(e.target.checked)}
+                            className="w-4 h-4 rounded border-white/10 bg-bg-dark text-primary focus:ring-primary focus:ring-offset-bg-card mt-0.5 cursor-pointer accent-primary"
+                          />
+                          <label htmlFor="cart-marketing-opt-in-mobile" className="text-[11px] text-white/60 select-none cursor-pointer leading-tight">
+                            {t('popia.marketingOptIn')}
+                          </label>
+                        </div>
+
+                        {/* POPIA Transaction Disclaimer */}
+                        <p className="text-[10px] text-white/40 leading-relaxed mt-1">
+                          By placing this order, you consent to our processing of your details to fulfill your order in accordance with our{' '}
+                          <button
+                            type="button"
+                            onClick={onOpenPrivacy}
+                            className="text-primary-light hover:underline font-bold focus:outline-none cursor-pointer inline animate-pulse-slow"
+                          >
+                            Privacy Policy
+                          </button>.
+                        </p>
 
                         <div className="bg-[#1c1513] border border-primary/20 rounded-xl p-3 text-center text-[10px] text-primary-light font-black tracking-widest uppercase mb-4 mt-2 animate-pulse-slow">
                           ● {t('cart.pickupOrder')}

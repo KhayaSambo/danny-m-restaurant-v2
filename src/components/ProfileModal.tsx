@@ -26,6 +26,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClos
   const setCustomerName = useCartStore((state) => state.setCustomerName);
   const setCustomerPhone = useCartStore((state) => state.setCustomerPhone);
   const setDeliveryAddress = useCartStore((state) => state.setDeliveryAddress);
+  const clearCheckoutFields = useCartStore((state) => state.clearCheckoutFields);
+  const clearCart = useCartStore((state) => state.clearCart);
 
   if (!isOpen) return null;
 
@@ -38,6 +40,39 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClos
       onClose();
       setIsClosing(false);
     }, closeMs);
+  };
+
+  const handleDeleteLocalData = async () => {
+    const confirmDelete = window.confirm(
+      t('popia.deleteDisclaimer')
+    );
+    if (!confirmDelete) return;
+
+    try {
+      // 1. Sign out from Supabase
+      await supabase.auth.signOut();
+      
+      // 2. Clear all local storage fields related to Danny M
+      localStorage.removeItem('danny-m-customer-name');
+      localStorage.removeItem('danny-m-customer-phone');
+      localStorage.removeItem('danny-m-customer-email');
+      localStorage.removeItem('danny-m-delivery-address');
+      localStorage.removeItem('danny-m-notes');
+      localStorage.removeItem('danny-m-cart');
+      localStorage.removeItem('danny-m-cookie-consent');
+      localStorage.removeItem('danny-m-onboarded');
+      
+      // 3. Clear store fields
+      clearCheckoutFields();
+      clearCart();
+      
+      alert('Local account data cleared successfully. To purge server-side order database records, please email info@dannym.co.za.');
+      handleCloseProfileModal();
+      window.location.reload(); // Refresh the page to reset all states
+    } catch (err) {
+      console.error('Error clearing data:', err);
+      alert('An error occurred while clearing your data.');
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -141,6 +176,21 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ user, isOpen, onClos
                 className={`w-full bg-[#151211] border border-white/5 rounded-xl px-4 py-3.5 text-xs text-white outline-none transition-all t-fire-input ${fieldErrors.deliveryAddress ? 'is-error' : ''} ${fieldShaking.deliveryAddress ? 'is-shaking' : ''}`}
               />
             </div>
+          </div>
+
+          {/* Data Deletion & Privacy section */}
+          <div className="pt-4 border-t border-white/5 space-y-3">
+            <h4 className="text-[10px] font-black tracking-widest text-red-400 uppercase">Data Privacy & POPIA Rights</h4>
+            <p className="text-[10px] text-white/50 leading-relaxed">
+              Under POPIA, you have the right to request deletion of your personal data. Erasing your local data will sign you out and clear your saved profile details.
+            </p>
+            <button
+              type="button"
+              onClick={handleDeleteLocalData}
+              className="w-full py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 text-red-400 text-[10px] font-black tracking-widest uppercase rounded-xl transition-all cursor-pointer text-center focus:outline-none"
+            >
+              {t('popia.deleteData')}
+            </button>
           </div>
         </div>
 

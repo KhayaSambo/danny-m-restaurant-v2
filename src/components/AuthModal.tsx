@@ -8,6 +8,7 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (user: SupaUser) => void;
+  onOpenPrivacy: () => void;
 }
 
 // Google SVG Icon
@@ -20,22 +21,17 @@ const GoogleIcon = () => (
   </svg>
 );
 
-// Apple SVG Icon
-const AppleIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98l-.09.06c-.22.14-2.15 1.25-2.13 3.74.03 2.97 2.6 3.96 2.63 3.97l-.05.91zM13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-  </svg>
-);
 
-export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, onOpenPrivacy }) => {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'email' | 'otp'>('email');
   const [loading, setLoading] = useState(false);
-  const [socialLoading, setSocialLoading] = useState<'google' | 'apple' | null>(null);
+  const [socialLoading, setSocialLoading] = useState<'google' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isClosing, setIsClosing] = useState(false);
-  const { t } = useTranslation();
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
+  const { t, currentLang } = useTranslation();
 
   // validation/shake states
   const [emailError, setEmailError] = useState(false);
@@ -79,6 +75,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     try {
       setLoading(true);
       setError(null);
+      localStorage.setItem('danny-m-newsletter-optin', marketingOptIn ? 'true' : 'false');
       const { error } = await supabase.auth.signInWithOtp({ 
         email,
         options: {
@@ -116,6 +113,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       });
       if (error) throw error;
       if (data.user) {
+        const optin = localStorage.getItem('danny-m-newsletter-optin') === 'true';
+        if (optin) {
+          await supabase.auth.updateUser({
+            data: { marketing_opt_in: true }
+          });
+        }
         onSuccess(data.user);
         handleClose();
       }
@@ -153,24 +156,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     }
   };
 
-  const handleAppleSignIn = async () => {
-    try {
-      setSocialLoading('apple');
-      setError(null);
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'apple',
-        options: {
-          redirectTo: window.location.origin,
-        },
-      });
-      if (error) throw error;
-      // Redirect happens automatically
-    } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : 'Failed to sign in with Apple.';
-      setError(errMsg);
-      setSocialLoading(null);
-    }
-  };
 
   return (
     <div 
@@ -202,7 +187,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               type="button"
               onClick={handleGoogleSignIn}
               disabled={!!socialLoading || loading}
-              className="w-full flex items-center justify-center gap-3 bg-white hover:bg-white/90 text-gray-800 font-bold rounded-xl py-3 text-sm transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mb-3 shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99]"
+              className="w-full flex items-center justify-center gap-3 bg-white hover:bg-white/90 text-gray-800 font-bold rounded-xl py-3 text-sm transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mb-5 shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99]"
             >
               {socialLoading === 'google' ? (
                 <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
@@ -210,21 +195,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 <GoogleIcon />
               )}
               {socialLoading === 'google' ? 'Redirecting…' : 'Continue with Google'}
-            </button>
-
-            {/* Apple Sign In */}
-            <button
-              type="button"
-              onClick={handleAppleSignIn}
-              disabled={!!socialLoading || loading}
-              className="w-full flex items-center justify-center gap-3 bg-black hover:bg-zinc-900 text-white font-bold rounded-xl py-3 text-sm border border-white/15 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mb-5 shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99]"
-            >
-              {socialLoading === 'apple' ? (
-                <span className="w-4 h-4 border-2 border-white/40 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <AppleIcon />
-              )}
-              {socialLoading === 'apple' ? 'Redirecting…' : 'Continue with Apple'}
             </button>
 
             {/* Divider */}
@@ -252,6 +222,62 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 />
               </div>
             </div>
+
+            {/* Newsletter Marketing Opt-In Checkbox */}
+            <div className="flex items-start gap-2.5 pt-1">
+              <input
+                type="checkbox"
+                id="newsletter-opt-in"
+                checked={marketingOptIn}
+                onChange={(e) => setMarketingOptIn(e.target.checked)}
+                className="w-4 h-4 rounded border-white/10 bg-bg-dark text-primary focus:ring-primary focus:ring-offset-bg-card mt-0.5 cursor-pointer accent-primary"
+              />
+              <label htmlFor="newsletter-opt-in" className="text-[11px] text-white/60 select-none cursor-pointer leading-tight">
+                {t('popia.marketingOptIn')}
+              </label>
+            </div>
+
+            {/* Privacy Disclaimer */}
+            <p className="text-[10px] text-white/40 leading-relaxed mt-1">
+              {currentLang === 'zu' ? (
+                <>
+                  Ngokungena ngemvume, uvumelana ne-{' '}
+                  <button
+                    type="button"
+                    onClick={onOpenPrivacy}
+                    className="text-primary-light hover:underline font-bold focus:outline-none cursor-pointer inline animate-pulse-slow"
+                  >
+                    Nqubomgomo Yobumfihlo
+                  </button>{' '}
+                  futhi uvumela ukucutshungulwa kwe-imeyili yakho.
+                </>
+              ) : currentLang === 'af' ? (
+                <>
+                  Deur aan te meld, stem jy in tot ons{' '}
+                  <button
+                    type="button"
+                    onClick={onOpenPrivacy}
+                    className="text-primary-light hover:underline font-bold focus:outline-none cursor-pointer inline animate-pulse-slow"
+                  >
+                    Privaatheidsbeleid
+                  </button>{' '}
+                  en die verwerking van jou e-pos.
+                </>
+              ) : (
+                <>
+                  By signing in, you agree to our{' '}
+                  <button
+                    type="button"
+                    onClick={onOpenPrivacy}
+                    className="text-primary-light hover:underline font-bold focus:outline-none cursor-pointer inline animate-pulse-slow"
+                  >
+                    Privacy Policy & POPIA
+                  </button>{' '}
+                  and consent to the processing of your email.
+                </>
+              )}
+            </p>
+
             <button 
               type="submit" 
               disabled={loading || !!socialLoading}
