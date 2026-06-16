@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { ChefHat } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { useCartStore } from './store/useCartStore';
@@ -8,11 +9,6 @@ import type { User as SupaUser } from '@supabase/supabase-js';
 
 // Components
 import { Navbar } from './components/Navbar';
-import { Hero } from './components/Hero';
-import { SignatureSpecials } from './components/SignatureSpecials';
-import { PromotionsSection } from './components/PromotionsSection';
-import { About } from './components/About';
-import { MenuSection } from './components/MenuSection';
 import { Footer } from './components/Footer';
 import { CartDrawer } from './components/CartDrawer';
 import { CustomizerModal } from './components/CustomizerModal';
@@ -22,6 +18,25 @@ import { AuthModal } from './components/AuthModal';
 import { WelcomeLanguageModal } from './components/WelcomeLanguageModal';
 import { CookieBanner } from './components/CookieBanner';
 import { PrivacyModal } from './components/PrivacyModal';
+
+// Pages
+import { Home } from './pages/Home';
+import { MenuPage } from './pages/MenuPage';
+import { AboutPage } from './pages/AboutPage';
+import { StoryPage } from './pages/StoryPage';
+
+// Scroll to Top component for smooth page transitions
+const ScrollToTop: React.FC = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    if (!window.location.hash) {
+      window.scrollTo(0, 0);
+    }
+  }, [pathname]);
+
+  return null;
+};
 
 const CMS_URL = import.meta.env.VITE_CMS_URL || '';
 
@@ -235,6 +250,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-bg-light text-white/90 font-body selection:bg-primary selection:text-white overflow-x-hidden">
+      <ScrollToTop />
       <WelcomeLanguageModal isOpen={isWelcomeModalOpen} onClose={() => setIsWelcomeModalOpen(false)} />
       {/* Navigation */}
       <Navbar
@@ -245,20 +261,13 @@ const App: React.FC = () => {
         setIsOrdersModalOpen={setIsOrdersModalOpen}
       />
 
-      {/* Hero Section */}
-      <Hero />
-
-      {/* Promotions and Specials */}
-      <PromotionsSection />
-
-      {/* Recommended Specials */}
-      <SignatureSpecials />
-
-      {/* About Section */}
-      <About />
-
-      {/* Traditional Menu Grid */}
-      <MenuSection />
+      {/* Pages Container with Routes */}
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/menu" element={<MenuPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/story" element={<StoryPage />} />
+      </Routes>
 
       {/* Styled Footer */}
       <Footer

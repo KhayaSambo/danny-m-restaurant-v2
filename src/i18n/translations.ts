@@ -26,6 +26,19 @@ export const translations = {
       ve: "Nganea Yashu",
       nr: "Ibali Lethu"
     },
+    about: {
+      en: "About Us",
+      zu: "Mayelana Nathi",
+      xh: "Malunga Nathi",
+      af: "Oor Ons",
+      nso: "Ka ga Rena",
+      tn: "Ka ga Rona",
+      st: "Mabapi le Rona",
+      ts: "Kutani hi Hina",
+      ss: "Mayelana Natsi",
+      ve: "Nga ha Rine",
+      nr: "Mayelana Nathi"
+    },
     menu: {
       en: "Menu",
       zu: "Imenyu",
