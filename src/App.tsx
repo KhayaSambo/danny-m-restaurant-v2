@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { ChefHat } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { useCartStore } from './store/useCartStore';
@@ -22,8 +22,8 @@ import { PrivacyModal } from './components/PrivacyModal';
 // Pages
 import { Home } from './pages/Home';
 import { MenuPage } from './pages/MenuPage';
-import { AboutPage } from './pages/AboutPage';
 import { StoryPage } from './pages/StoryPage';
+import { ContactPage } from './pages/ContactPage';
 
 // Scroll to Top component for smooth page transitions
 const ScrollToTop: React.FC = () => {
@@ -265,8 +265,9 @@ const App: React.FC = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/menu" element={<MenuPage />} />
-        <Route path="/about" element={<AboutPage />} />
         <Route path="/story" element={<StoryPage />} />
+        <Route path="/about" element={<Navigate to="/story" replace />} />
+        <Route path="/contact" element={<ContactPage />} />
       </Routes>
 
       {/* Styled Footer */}

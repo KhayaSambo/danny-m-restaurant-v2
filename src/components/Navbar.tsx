@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { User, ShoppingCart, Utensils, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCartStore } from '../store/useCartStore';
@@ -28,27 +28,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const { t } = useTranslation();
   const location = useLocation();
-  const navigate = useNavigate();
-  const isHome = location.pathname === '/';
-  const showNavbar = isScrolled || !isHome;
 
-  const handleContactClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (isHome) {
-      const contactElement = document.getElementById('contact');
-      if (contactElement) {
-        contactElement.scrollIntoView({ behavior: 'smooth' });
-      }
-    } else {
-      navigate('/');
-      setTimeout(() => {
-        const contactElement = document.getElementById('contact');
-        if (contactElement) {
-          contactElement.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
-    }
-  };
+  const isHome = location.pathname === '/';
+  const showScrolledStyles = isScrolled || !isHome;
+
 
   const totalCartCount = useCartStore((state) => state.totalCartCount());
   const setIsCartOpen = useCartStore((state) => state.setIsCartOpen);
@@ -87,9 +70,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${showNavbar
-      ? 'bg-bg-dark/85 border-b border-white/5 backdrop-blur-xl py-4 shadow-2xl shadow-black/40 opacity-100 translate-y-0 pointer-events-auto'
-      : 'opacity-0 -translate-y-4 pointer-events-none'
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${
+      showScrolledStyles
+        ? 'bg-bg-dark/85 border-b border-white/5 backdrop-blur-xl py-4 shadow-2xl shadow-black/40 opacity-100 translate-y-0 pointer-events-auto'
+        : 'bg-transparent border-b border-transparent py-5 opacity-100 translate-y-0 pointer-events-auto'
       }`}>
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         <Link to="/" className="flex items-center gap-3 font-heading font-extrabold text-2xl tracking-tight hover:scale-102 transition-transform">
@@ -127,18 +111,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           </li>
           <li>
             <NavLink 
-              to="/about" 
-              className={({ isActive }) => 
-                `transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300 ${
-                  isActive ? 'text-primary after:w-full' : 'text-white/60 hover:text-primary after:w-0'
-                }`
-              }
-            >
-              {t('nav.about')}
-            </NavLink>
-          </li>
-          <li>
-            <NavLink 
               to="/menu" 
               className={({ isActive }) => 
                 `transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300 ${
@@ -150,13 +122,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             </NavLink>
           </li>
           <li>
-            <a 
-              href="#contact" 
-              onClick={handleContactClick} 
-              className="text-white/60 hover:text-primary transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300 cursor-pointer"
+            <NavLink 
+              to="/contact" 
+              className={({ isActive }) => 
+                `transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300 ${
+                  isActive ? 'text-primary after:w-full' : 'text-white/60 hover:text-primary after:w-0'
+                }`
+              }
             >
               {t('nav.contact')}
-            </a>
+            </NavLink>
           </li>
         </ul>
 
