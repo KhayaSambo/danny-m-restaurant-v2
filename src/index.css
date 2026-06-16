@@ -375,4 +375,70 @@ div[class*="yoco"],
   z-index: 999999999 !important;
 }
 
+/* === DISH CAROUSEL === */
+.dish-carousel-container {
+  position: relative;
+  width: 240px;
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 480px) {
+  .dish-carousel-container {
+    width: 280px;
+    height: 280px;
+  }
+}
+
+@media (min-width: 640px) {
+  .dish-carousel-container {
+    width: 380px;
+    height: 380px;
+  }
+}
+
+@media (min-width: 768px) {
+  .dish-carousel-container {
+    width: 420px;
+    height: 420px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .dish-carousel-container {
+    width: 480px;
+    height: 480px;
+  }
+}
+
+.dish-slide {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transform: scale(0.75) rotate(-12deg);
+  transition: transform 1.8s cubic-bezier(0.25, 1, 0.5, 1), 
+              opacity 1.8s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform, opacity;
+  z-index: 1;
+}
+
+/* Active State: Fills frame, natural rotation */
+.dish-slide.active {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+  z-index: 2;
+}
+
+/* Outgoing State: Shrinks, rotates right, fades out */
+.dish-slide.outgoing {
+  opacity: 0;
+  transform: scale(0.75) rotate(12deg);
+  z-index: 1;
+}
+
+
 

@@ -1,9 +1,59 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Salad, Home, CreditCard, Wine } from 'lucide-react';
 import { useTranslation } from '../hooks/useTranslation';
 
+const carouselImages = [
+  '/images/Hardbody-Chicken-Meal-transparent.png',
+  '/images/Hardbody-Chicken-Only-transparent.png',
+  '/images/Cow-Heels-Meal-transparent.png',
+  '/images/Braai-Meat-Meal-transparent.png',
+  '/images/Beef-Stew-Only_transparent.png',
+  '/images/beef meal background removed.png',
+  '/images/Wors-Stew-Meal-transparent.png'
+];
+
 export const Hero: React.FC = () => {
   const { t } = useTranslation();
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [prevIndex, setPrevIndex] = useState<number | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Preload carousel images to prevent layout flash or blanks
+  useEffect(() => {
+    let loadedCount = 0;
+    carouselImages.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => {
+        loadedCount++;
+        if (loadedCount === carouselImages.length) {
+          setIsLoaded(true);
+        }
+      };
+      img.onerror = () => {
+        loadedCount++;
+        if (loadedCount === carouselImages.length) {
+          setIsLoaded(true);
+        }
+      };
+    });
+  }, []);
+
+  // Slide cycle transition every 4.5 seconds
+  useEffect(() => {
+    if (!isLoaded) return;
+    const interval = setInterval(() => {
+      setPrevIndex(currentIndex);
+      setCurrentIndex((prev) => (prev + 1) % carouselImages.length);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, [isLoaded, currentIndex]);
+
+  const getSlideClassName = (index: number) => {
+    if (index === currentIndex) return 'dish-slide active';
+    if (index === prevIndex) return 'dish-slide outgoing';
+    return 'dish-slide';
+  };
 
   return (
     <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden bg-bg-dark">
@@ -21,20 +71,33 @@ export const Hero: React.FC = () => {
           DANNY M
         </div>
 
-        {/* Hero Content Grid with Centered Logo Plate */}
+        {/* Hero Content Grid with Centered Carousel / Logo Plate */}
         <div className="relative flex flex-col items-center justify-center z-10 py-12">
           {/* Centered Glowing Medallion */}
           <div className="relative flex flex-col items-center">
             <div className="relative group cursor-pointer">
-              {/* Intense Ember Glow behind Logo */}
+              {/* Intense Ember Glow behind Logo / Carousel */}
               <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary to-accent blur-3xl opacity-40 group-hover:opacity-85 transition-all duration-700 scale-110 animate-pulse-slow" />
               <div className="absolute -inset-4 rounded-full border border-white/5 animate-pulse" />
 
-              {/* Main Plate Medallion */}
-              <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-full overflow-hidden border-4 border-primary-light/50 bg-[#151211] p-1 flex items-center justify-center transition-transform duration-500 group-hover:scale-105 shadow-[0_0_60px_rgba(211,84,0,0.3)]">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10" />
-                <img src="/logo.png" alt="Danny M Restaurant circular Logo" className="w-full h-full object-contain p-4 relative z-20" />
-              </div>
+              {/* Dish Carousel or Logo Medallion (while loading) */}
+              {!isLoaded ? (
+                <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-full overflow-hidden border-4 border-primary-light/50 bg-[#151211] p-1 flex items-center justify-center transition-transform duration-500 group-hover:scale-105 shadow-[0_0_60px_rgba(211,84,0,0.3)]">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10" />
+                  <img src="/logo.png" alt="Danny M Restaurant circular Logo" className="w-full h-full object-contain p-4 relative z-20" />
+                </div>
+              ) : (
+                <div className="dish-carousel-container transition-all duration-500 hover:scale-105">
+                  {carouselImages.map((src, index) => (
+                    <img
+                      key={src}
+                      src={src}
+                      alt={`Danny M Premium Dish ${index + 1}`}
+                      className={getSlideClassName(index)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
