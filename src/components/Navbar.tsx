@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { User, ShoppingCart, Utensils, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCartStore } from '../store/useCartStore';
@@ -26,6 +27,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isProfileClosing, setIsProfileClosing] = useState(false);
 
   const { t } = useTranslation();
+  const location = useLocation();
+
+  const isHome = location.pathname === '/';
+  const showScrolledStyles = isScrolled || !isHome;
+
 
   const totalCartCount = useCartStore((state) => state.totalCartCount());
   const setIsCartOpen = useCartStore((state) => state.setIsCartOpen);
@@ -64,30 +70,68 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${isScrolled
-      ? 'bg-bg-dark/85 border-b border-white/5 backdrop-blur-xl py-4 shadow-2xl shadow-black/40 opacity-100 translate-y-0 pointer-events-auto'
-      : 'opacity-0 -translate-y-4 pointer-events-none'
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${
+      showScrolledStyles
+        ? 'bg-bg-dark/85 border-b border-white/5 backdrop-blur-xl py-4 shadow-2xl shadow-black/40 opacity-100 translate-y-0 pointer-events-auto'
+        : 'bg-transparent border-b border-transparent py-5 opacity-100 translate-y-0 pointer-events-auto'
       }`}>
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-        <a href="#" className="flex items-center gap-3 font-heading font-extrabold text-2xl tracking-tight hover:scale-102 transition-transform">
+        <Link to="/" className="flex items-center gap-3 font-heading font-extrabold text-2xl tracking-tight hover:scale-102 transition-transform">
           <div className="w-12 h-12 rounded-full overflow-hidden border border-primary bg-secondary flex items-center justify-center p-0.5 shadow-lg shadow-primary/20">
             <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
           </div>
           <span className="tracking-tight bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">DANNY M</span>
-        </a>
+        </Link>
 
-        <ul className="hidden md:flex gap-10 font-bold text-xs tracking-widest text-white/60 uppercase">
+        <ul className="hidden md:flex gap-10 font-bold text-xs tracking-widest uppercase items-center">
           <li>
-            <a href="#home" className="hover:text-primary transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300">{t('nav.home')}</a>
+            <NavLink 
+              to="/" 
+              end
+              className={({ isActive }) => 
+                `transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300 ${
+                  isActive ? 'text-primary after:w-full' : 'text-white/60 hover:text-primary after:w-0'
+                }`
+              }
+            >
+              {t('nav.home')}
+            </NavLink>
           </li>
           <li>
-            <a href="#about" className="hover:text-primary transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300">{t('nav.story')}</a>
+            <NavLink 
+              to="/story" 
+              className={({ isActive }) => 
+                `transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300 ${
+                  isActive ? 'text-primary after:w-full' : 'text-white/60 hover:text-primary after:w-0'
+                }`
+              }
+            >
+              {t('nav.story')}
+            </NavLink>
           </li>
           <li>
-            <a href="#menu" className="hover:text-primary transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300">{t('nav.menu')}</a>
+            <NavLink 
+              to="/menu" 
+              className={({ isActive }) => 
+                `transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300 ${
+                  isActive ? 'text-primary after:w-full' : 'text-white/60 hover:text-primary after:w-0'
+                }`
+              }
+            >
+              {t('nav.menu')}
+            </NavLink>
           </li>
           <li>
-            <a href="#contact" className="hover:text-primary transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300">{t('nav.contact')}</a>
+            <NavLink 
+              to="/contact" 
+              className={({ isActive }) => 
+                `transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 hover:after:w-full after:h-0.5 after:bg-primary after:transition-all after:duration-300 ${
+                  isActive ? 'text-primary after:w-full' : 'text-white/60 hover:text-primary after:w-0'
+                }`
+              }
+            >
+              {t('nav.contact')}
+            </NavLink>
           </li>
         </ul>
 
@@ -160,9 +204,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </span>
           </button>
-          <a href="#menu" className="bg-primary text-white px-6 py-2.5 rounded-full font-bold hover:bg-primary-light hover:shadow-lg hover:shadow-primary/30 transition-all text-xs tracking-widest uppercase border border-primary-light/20">
+          <Link to="/menu" className="bg-primary text-white px-6 py-2.5 rounded-full font-bold hover:bg-primary-light hover:shadow-lg hover:shadow-primary/30 transition-all text-xs tracking-widest uppercase border border-primary-light/20">
             {t('nav.orderNow')}
-          </a>
+          </Link>
         </div>
       </div>
     </nav>
