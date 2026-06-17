@@ -2,13 +2,16 @@ import React, { useRef } from 'react';
 import { useCartStore } from '../store/useCartStore';
 import { useMenuStore } from '../store/useMenuStore';
 import { useTranslation } from '../hooks/useTranslation';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import { calculateDiscountedPrice, hasActiveSpecial } from '../utils/pricing';
 
 export const PromotionsSection: React.FC = () => {
   const { t } = useTranslation();
   const categories = useMenuStore((state) => state.categories);
   const bundleDeals = useMenuStore((state) => state.bundleDeals);
+  const loading = useMenuStore((state) => state.loading);
+  const error = useMenuStore((state) => state.error);
+  const loadMenu = useMenuStore((state) => state.loadMenu);
   const cart = useCartStore((state) => state.cart);
   const addClick = useCartStore((state) => state.addClick);
   const incrementItem = useCartStore((state) => state.incrementItem);
@@ -102,7 +105,7 @@ export const PromotionsSection: React.FC = () => {
   const scroll = (direction: 'left' | 'right') => {
     if (carouselRef.current) {
       const { scrollLeft } = carouselRef.current;
-      const cardWidth = window.innerWidth < 640 ? 320 : 400;
+      const cardWidth = window.innerWidth < 400 ? 280 : (window.innerWidth < 640 ? 320 : 400);
       const gap = 48; // matching gap-12
       const scrollTo = direction === 'left'
         ? scrollLeft - (cardWidth + gap)
@@ -111,8 +114,44 @@ export const PromotionsSection: React.FC = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <section className="py-24 bg-bg-dark border-t border-white/5 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 relative text-center">
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-white/60 text-xs font-bold tracking-widest uppercase">Loading hot deals...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="py-24 bg-bg-dark border-t border-white/5 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 relative">
+          <div className="text-center py-16 bg-red-500/10 border border-red-500/20 rounded-3xl max-w-2xl mx-auto p-8 space-y-4">
+            <AlertTriangle className="w-12 h-12 text-red-550 mx-auto" />
+            <h3 className="font-heading text-lg font-bold text-white">Failed to Load Promotions</h3>
+            <p className="text-white/60 text-sm">{error}</p>
+            <button
+              onClick={() => loadMenu()}
+              className="px-6 py-2.5 bg-primary text-white rounded-full font-bold text-xs tracking-widest uppercase hover:bg-primary-light transition-all cursor-pointer"
+            >
+              Retry Connection
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className="py-24 bg-bg-dark border-t border-white/5 overflow-visible">
+    <section className="py-24 bg-bg-dark border-t border-white/5 relative overflow-hidden">
+      {/* Left and Right Edge Fade Overlays */}
+      <div className="absolute left-0 top-0 bottom-0 w-12 md:w-32 bg-gradient-to-r from-bg-dark via-bg-dark/40 to-transparent pointer-events-none z-30" />
+      <div className="absolute right-0 top-0 bottom-0 w-12 md:w-32 bg-gradient-to-l from-bg-dark via-bg-dark/40 to-transparent pointer-events-none z-30" />
       <div className="max-w-7xl mx-auto px-6 relative">
 
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
@@ -155,7 +194,7 @@ export const PromotionsSection: React.FC = () => {
             return (
               <div
                 key={item.id}
-                className={`relative flex-shrink-0 w-[320px] sm:w-[400px] snap-center ${style.bg} rounded-[2.5rem] p-8 min-h-[300px] flex flex-col justify-between overflow-visible shadow-2xl transition-transform duration-500 hover:-translate-y-2 group ${style.border}`}
+                className={`relative flex-shrink-0 w-[280px] min-[400px]:w-[320px] sm:w-[400px] snap-center ${style.bg} rounded-[2.5rem] p-6 min-[400px]:p-8 min-h-[300px] flex flex-col justify-between overflow-visible shadow-2xl transition-transform duration-500 hover:-translate-y-2 group ${style.border}`}
               >
                 <div className="max-w-[60%] z-10 flex flex-col justify-between h-full">
                   <span className={`text-[10px] font-black tracking-widest uppercase bg-white/20 px-2 py-1 rounded w-max ${style.badgeText}`}>{item.badge}</span>
@@ -241,8 +280,8 @@ export const PromotionsSection: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="absolute top-1/2 -translate-y-1/2 -right-8 z-20 flex items-center justify-center">
-                  <div className={`relative w-44 h-44 md:w-48 md:h-48 rounded-full overflow-hidden border-4 ${style.imgBorder} shadow-[0_15px_40px_rgba(0,0,0,0.5)] transition-transform duration-500 group-hover:scale-105 group-hover:rotate-12 bg-bg-card`}>
+                <div className="absolute top-1/2 -translate-y-1/2 -right-4 min-[400px]:-right-6 sm:-right-8 z-20 flex items-center justify-center">
+                  <div className={`relative w-32 h-32 min-[400px]:w-40 min-[400px]:h-40 sm:w-44 sm:h-44 md:w-48 md:h-48 rounded-full overflow-hidden border-4 ${style.imgBorder} shadow-[0_15px_40px_rgba(0,0,0,0.5)] transition-transform duration-500 group-hover:scale-105 group-hover:rotate-12 bg-bg-card`}>
                     <img
                       src={item.image}
                       alt={`${item.title} plate`}
@@ -251,13 +290,13 @@ export const PromotionsSection: React.FC = () => {
                   </div>
                   {item.extraImages && item.extraImages.map((extraImg, idx) => {
                     const positions = [
-                      "-bottom-4 -left-4",
-                      "-top-4 -left-4",
-                      "-bottom-4 right-8",
+                      "-bottom-3 -left-3 min-[400px]:-bottom-4 min-[400px]:-left-4",
+                      "-top-3 -left-3 min-[400px]:-top-4 min-[400px]:-left-4",
+                      "-bottom-3 right-6 min-[400px]:-bottom-4 min-[400px]:right-8",
                     ];
                     const pos = positions[idx % positions.length];
                     return (
-                      <div key={idx} className={`absolute ${pos} w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-4 ${style.imgBorder} shadow-[0_8px_20px_rgba(0,0,0,0.4)] transition-transform duration-500 group-hover:scale-110 z-30 bg-bg-card`}>
+                      <div key={idx} className={`absolute ${pos} w-12 h-12 min-[400px]:w-14 min-[400px]:h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-4 ${style.imgBorder} shadow-[0_8px_20px_rgba(0,0,0,0.4)] transition-transform duration-500 group-hover:scale-110 z-30 bg-bg-card`}>
                         <img src={extraImg} alt="Bundle extra item" className="w-full h-full object-cover" />
                       </div>
                     );

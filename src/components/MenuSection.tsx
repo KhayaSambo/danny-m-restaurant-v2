@@ -15,6 +15,7 @@ export const MenuSection: React.FC = () => {
   const categories = useMenuStore((state) => state.categories);
   const loading = useMenuStore((state) => state.loading);
   const error = useMenuStore((state) => state.error);
+  const loadMenu = useMenuStore((state) => state.loadMenu);
   const selectedCategoryId = useMenuStore((state) => state.selectedCategoryId);
   const setSelectedCategoryId = useMenuStore((state) => state.setSelectedCategoryId);
   const getDisplayedMenuItems = useMenuStore((state) => state.getDisplayedMenuItems);
@@ -29,34 +30,36 @@ export const MenuSection: React.FC = () => {
         <div className="flex flex-col items-center text-center mb-16 space-y-6">
           <div className="space-y-3">
             <span className="text-primary-light font-bold uppercase tracking-widest text-xs">{t('menu.fullMenuSubtitle')}</span>
-            <h2 className="font-heading text-3xl md:text-5xl font-extrabold text-white tracking-tight">{t('menu.title')}</h2>
+            <h2 className="font-heading text-3xl md:text-5xl font-extrabold text-white tracking-tight">{t('menu.fullMenuTitle')}</h2>
             <div className="w-16 h-1 bg-primary mx-auto rounded-full mt-2" />
           </div>
 
           {/* Dynamic Category Filter Selection Pills */}
-          <div className="flex flex-wrap justify-center gap-2 p-1 bg-bg-card border border-white/5 rounded-full shadow-inner max-w-4xl mx-auto overflow-hidden">
-            <button
-              onClick={() => setSelectedCategoryId('all')}
-              className={`px-5 py-2.5 rounded-full font-black text-[10px] tracking-widest uppercase transition-all cursor-pointer ${selectedCategoryId === 'all'
-                ? 'bg-primary text-white shadow-md'
-                : 'text-white/60 hover:text-white'
-                }`}
-            >
-              ● {t('nav.home') === 'Home' ? 'SHOW ALL' : 'ALL'}
-            </button>
-            {categories.map((category) => (
+          <div className="w-full flex overflow-x-auto no-scrollbar p-1 bg-bg-card border border-white/5 rounded-2xl sm:rounded-full shadow-inner max-w-4xl mx-auto">
+            <div className="flex gap-2 min-w-max mx-auto px-2">
               <button
-                key={category.id}
-                onClick={() => setSelectedCategoryId(category.id)}
-                className={`px-5 py-2.5 rounded-full font-black text-[10px] tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-2 ${selectedCategoryId === category.id
+                onClick={() => setSelectedCategoryId('all')}
+                className={`flex-shrink-0 px-5 py-2.5 rounded-full font-black text-[10px] tracking-widest uppercase transition-all cursor-pointer ${selectedCategoryId === 'all'
                   ? 'bg-primary text-white shadow-md'
                   : 'text-white/60 hover:text-white'
                   }`}
               >
-                <UtensilsCrossed className="w-3.5 h-3.5" />
-                <span>{category.name}</span>
+                ● {t('nav.home') === 'Home' ? 'SHOW ALL' : 'ALL'}
               </button>
-            ))}
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategoryId(category.id)}
+                  className={`flex-shrink-0 px-5 py-2.5 rounded-full font-black text-[10px] tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-2 ${selectedCategoryId === category.id
+                    ? 'bg-primary text-white shadow-md'
+                    : 'text-white/60 hover:text-white'
+                    }`}
+                >
+                  <UtensilsCrossed className="w-3.5 h-3.5" />
+                  <span>{category.name}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -72,7 +75,7 @@ export const MenuSection: React.FC = () => {
             <h3 className="font-heading text-lg font-bold text-white">Failed to Load Menu</h3>
             <p className="text-white/60 text-sm">{error}</p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => loadMenu()}
               className="px-6 py-2.5 bg-primary text-white rounded-full font-bold text-xs tracking-widest uppercase hover:bg-primary-light transition-all cursor-pointer"
             >
               Retry Connection

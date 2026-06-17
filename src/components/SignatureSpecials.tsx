@@ -12,7 +12,14 @@ export const SignatureSpecials: React.FC = () => {
   const incrementItem = useCartStore((state) => state.incrementItem);
   const decrementItem = useCartStore((state) => state.decrementItem);
   
+  const loading = useMenuStore((state) => state.loading);
+  const error = useMenuStore((state) => state.error);
+  
   const carouselRef = useRef<HTMLDivElement>(null);
+
+  if (loading || error) {
+    return null;
+  }
 
   const allMenuItems = categories.flatMap(cat => cat.menuItems);
 
@@ -95,7 +102,7 @@ export const SignatureSpecials: React.FC = () => {
   const scroll = (direction: 'left' | 'right') => {
     if (carouselRef.current) {
       const { scrollLeft } = carouselRef.current;
-      const cardWidth = window.innerWidth < 640 ? 320 : 400;
+      const cardWidth = window.innerWidth < 400 ? 280 : (window.innerWidth < 640 ? 320 : 400);
       const gap = 48; // matching gap-12
       const scrollTo = direction === 'left'
         ? scrollLeft - (cardWidth + gap)
@@ -105,7 +112,10 @@ export const SignatureSpecials: React.FC = () => {
   };
 
   return (
-    <section className="py-24 bg-bg-dark border-t border-white/5 overflow-visible">
+    <section className="py-24 bg-bg-dark border-t border-white/5 relative overflow-hidden">
+      {/* Left and Right Edge Fade Overlays */}
+      <div className="absolute left-0 top-0 bottom-0 w-12 md:w-32 bg-gradient-to-r from-bg-dark via-bg-dark/40 to-transparent pointer-events-none z-30" />
+      <div className="absolute right-0 top-0 bottom-0 w-12 md:w-32 bg-gradient-to-l from-bg-dark via-bg-dark/40 to-transparent pointer-events-none z-30" />
       <div className="max-w-7xl mx-auto px-6 relative">
 
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
@@ -150,7 +160,7 @@ export const SignatureSpecials: React.FC = () => {
             return (
               <div
                 key={item.id}
-                className={`relative flex-shrink-0 w-[320px] sm:w-[400px] snap-center ${style.bg} rounded-[2.5rem] p-8 min-h-[300px] flex flex-col justify-between overflow-visible shadow-2xl transition-transform duration-500 hover:-translate-y-2 group ${style.border}`}
+                className={`relative flex-shrink-0 w-[280px] min-[400px]:w-[320px] sm:w-[400px] snap-center ${style.bg} rounded-[2.5rem] p-6 min-[400px]:p-8 min-h-[300px] flex flex-col justify-between overflow-visible shadow-2xl transition-transform duration-500 hover:-translate-y-2 group ${style.border}`}
               >
                 <div className="max-w-[60%] z-10 flex flex-col justify-between h-full">
                   <span className={`text-[9px] font-black tracking-widest uppercase ${style.badgeText}`}>{style.badge}</span>
@@ -194,7 +204,7 @@ export const SignatureSpecials: React.FC = () => {
                   </div>
                 </div>
 
-                <div className={`absolute top-1/2 -translate-y-1/2 -right-8 w-44 h-44 md:w-48 md:h-48 rounded-full overflow-hidden border-4 ${style.imgBorder} shadow-[0_15px_40px_rgba(0,0,0,0.5)] z-20 transition-transform duration-500 group-hover:scale-105 group-hover:rotate-12 bg-bg-card`}>
+                <div className={`absolute top-1/2 -translate-y-1/2 -right-4 min-[400px]:-right-6 sm:-right-8 w-32 h-32 min-[400px]:w-40 min-[400px]:h-40 sm:w-44 sm:h-44 md:w-48 md:h-48 rounded-full overflow-hidden border-4 ${style.imgBorder} shadow-[0_15px_40px_rgba(0,0,0,0.5)] z-20 transition-transform duration-500 group-hover:scale-105 group-hover:rotate-12 bg-bg-card`}>
                   <img
                     src={item.image || style.fallbackImage}
                     alt={`${item.name} plate`}

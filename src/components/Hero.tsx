@@ -7,7 +7,7 @@ const carouselImages = [
   '/images/Hardbody-Chicken-Only-transparent.png',
   '/images/Cow-Heels-Meal-transparent.png',
   '/images/Braai-Meat-Meal-transparent.png',
-  '/images/Beef-Stew-Only_transparent.png',
+  '/images/Wors-Stew-Only_transparent.png',
   '/images/beef meal background removed.png',
 
 ];
@@ -85,7 +85,7 @@ export const Hero: React.FC = () => {
             </p>
 
             <div className="pt-4">
-              <a href="#menu" className="inline-flex bg-primary hover:bg-primary-light text-white px-10 py-4 rounded-full font-bold text-sm transition-all transform hover:-translate-y-0.5 shadow-xl shadow-primary/20 hover:shadow-primary/40 border border-primary-light/20 tracking-wider uppercase items-center gap-2">
+              <a href="/menu" className="inline-flex bg-primary hover:bg-primary-light text-white px-10 py-4 rounded-full font-bold text-sm transition-all transform hover:-translate-y-0.5 shadow-xl shadow-primary/20 hover:shadow-primary/40 border border-primary-light/20 tracking-wider uppercase items-center gap-2">
                 {t('menu.fullMenuTitle')}
               </a>
             </div>
