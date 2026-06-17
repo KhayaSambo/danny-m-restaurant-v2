@@ -16,8 +16,9 @@ export const useTranslation = () => {
       }
     }
 
-    if (result && typeof result === 'object') {
-      return result[currentLang] || result['en'] || key;
+    if (result && typeof result === 'object' && !Array.isArray(result)) {
+      const resObj = result as Record<string, string>;
+      return resObj[currentLang] || resObj['en'] || key;
     }
 
     return typeof result === 'string' ? result : key;
