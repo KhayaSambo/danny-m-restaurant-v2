@@ -6,18 +6,19 @@ export const useTranslation = () => {
 
   const t = (key: string): string => {
     const keys = key.split('.');
-    let result: any = translations;
+    let result: unknown = translations;
 
     for (const k of keys) {
-      if (result && k in result) {
-        result = result[k];
+      if (result && typeof result === 'object' && k in result) {
+        result = (result as Record<string, unknown>)[k];
       } else {
         return key; // Return the key if path doesn't exist
       }
     }
 
-    if (result && typeof result === 'object') {
-      return result[currentLang] || result['en'] || key;
+    if (result && typeof result === 'object' && !Array.isArray(result)) {
+      const resObj = result as Record<string, string>;
+      return resObj[currentLang] || resObj['en'] || key;
     }
 
     return typeof result === 'string' ? result : key;

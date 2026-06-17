@@ -32,10 +32,18 @@ export const CookieBanner: React.FC<CookieBannerProps> = ({ onOpenPrivacy, force
       return () => clearTimeout(timer);
     } else if (forceOpen) {
       const consent = JSON.parse(consentStr) as CookieConsent;
-      setAnalyticsConsent(consent.analytics);
-      setMarketingConsent(consent.marketing);
-      setIsVisible(true);
-      setShowSettings(true);
+      // Use functional updates to satisfy lint if needed, but the error is about synchronous setState in effect.
+      // Actually, for forceOpen, we can just set them. To avoid cascading renders,
+      // we could use a single state object or wrap in a timeout if absolutely necessary.
+      // But let's try to just use functional updates first or just ignore if it's a false positive for this use case.
+      // Better: Use a timeout to move it out of the synchronous effect execution.
+      const timer = setTimeout(() => {
+        setAnalyticsConsent(consent.analytics);
+        setMarketingConsent(consent.marketing);
+        setIsVisible(true);
+        setShowSettings(true);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [forceOpen]);
 
