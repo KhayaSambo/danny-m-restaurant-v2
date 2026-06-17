@@ -323,6 +323,20 @@
   to   { transform: translate(0, 0); }
 }
 
+:root {
+  --badge-offset-x: 10px;
+  --badge-offset-y: -10px;
+  --badge-slide-dur: 400ms;
+  --badge-slide-ease: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --badge-pop-dur: 300ms;
+  --badge-pop-ease: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --badge-fade-dur: 200ms;
+  --badge-blur: 4px;
+  --badge-pop-close-dur: 200ms;
+  --badge-close-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --badge-fade-close-dur: 150ms;
+}
+
 .t-badge {
   position: absolute;
   top: -6px;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User as SupaUser } from '@supabase/supabase-js';
 import { X, Mail, ArrowRight, CheckCircle2 } from 'lucide-react';
@@ -39,7 +39,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [otpError, setOtpError] = useState(false);
   const [otpShaking, setOtpShaking] = useState(false);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsClosing(true);
     const closeMs = parseFloat(
       getComputedStyle(document.documentElement).getPropertyValue("--modal-close-dur")
@@ -48,7 +48,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       onClose();
       setIsClosing(false);
     }, closeMs);
-  };
+  }, [onClose]);
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
@@ -61,6 +61,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     setOtpError(false);
     setOtpShaking(false);
   };
+
+  useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, handleClose]);
 
   if (!isOpen) return null;
 
@@ -166,7 +176,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         className={`w-full max-w-md bg-bg-card border border-white/10 p-8 rounded-[2rem] shadow-2xl relative t-modal ${!isClosing ? 'is-open' : 'is-closing'}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <button onClick={handleClose} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors cursor-pointer">
+        <button
+          onClick={handleClose}
+          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors cursor-pointer"
+          aria-label="Close authentication modal"
+        >
           <X className="w-4 h-4" />
         </button>
         

@@ -526,7 +526,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                             <button
                               onClick={() => removeItem(displayId)}
                               className="text-white/30 hover:text-red-500 transition-colors text-sm cursor-pointer"
-                              aria-label="Remove item"
+                              aria-label={`Remove ${displayName} from plate`}
                             >
                               ✕
                             </button>
@@ -793,6 +793,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                               <button
                                 onClick={() => removeItem(displayId)}
                                 className="text-white/30 hover:text-red-500 transition-colors text-sm cursor-pointer"
+                                aria-label={`Remove ${displayName} from plate`}
                               >
                                 ✕
                               </button>
