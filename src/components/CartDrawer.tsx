@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Utensils,
   Flame,
@@ -72,7 +72,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
   const totalCartPrice = useCartStore((state) => state.totalCartPrice());
   const { subtotal, vat: calculatedVat } = calculateVat(totalCartPrice);
 
-  const handleCloseCart = () => {
+  const handleCloseCart = useCallback(() => {
     setIsCartClosing(true);
     const closeMs = parseFloat(
       getComputedStyle(document.documentElement).getPropertyValue("--modal-close-dur")
@@ -81,7 +81,17 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
       setIsCartOpen(false);
       setIsCartClosing(false);
     }, closeMs);
-  };
+  }, [setIsCartClosing, setIsCartOpen]);
+
+  useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isCartOpen) {
+        handleCloseCart();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isCartOpen, handleCloseCart]);
 
   const handleCheckoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,8 +217,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
   };
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/75 backdrop-blur-md transition-opacity duration-300 ${isCartOpen && !isCartClosing ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-      <div className={`relative bg-bg-card/98 border border-white/10 rounded-[2.5rem] w-full max-w-5xl h-[85vh] md:h-[80vh] flex flex-col justify-between shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl t-modal ${isCartOpen && !isCartClosing ? 'is-open' : ''} ${isCartClosing ? 'is-closing' : ''} overflow-hidden`}>
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/75 backdrop-blur-md transition-opacity duration-300 ${isCartOpen && !isCartClosing ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+      onClick={handleCloseCart}
+    >
+      <div
+        className={`relative bg-bg-card/98 border border-white/10 rounded-[2.5rem] w-full max-w-5xl h-[85vh] md:h-[80vh] flex flex-col justify-between shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl t-modal ${isCartOpen && !isCartClosing ? 'is-open' : ''} ${isCartClosing ? 'is-closing' : ''} overflow-hidden`}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="p-6 border-b border-white/5 flex justify-between items-center bg-bg-dark/30">
           {activeOrderId ? (
@@ -611,6 +627,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                               <button
                                 onClick={() => decrementItem(targetObj)}
                                 className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/5 cursor-pointer"
+                                aria-label="Decrease quantity"
                               >
                                 −
                               </button>
@@ -618,6 +635,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                               <button
                                 onClick={() => incrementItem(targetObj)}
                                 className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/5 cursor-pointer"
+                                aria-label="Increase quantity"
                               >
                                 +
                               </button>
@@ -876,6 +894,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                                 <button
                                   onClick={() => decrementItem(targetObj)}
                                   className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/5 cursor-pointer"
+                                  aria-label="Decrease quantity"
                                 >
                                   −
                                 </button>
@@ -883,6 +902,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                                 <button
                                   onClick={() => incrementItem(targetObj)}
                                   className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/5 cursor-pointer"
+                                  aria-label="Increase quantity"
                                 >
                                   +
                                 </button>
