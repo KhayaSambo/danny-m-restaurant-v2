@@ -162,7 +162,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
           selectedExtras: entry.selectedExtras || [],
           selectedBeverages: entry.selectedBeverages || []
         })),
-        cmsPayload: payload
+        cmsPayload: { ...payload, source: 'Web' }
       };
       
       localStorage.setItem('danny-m-pending-order', JSON.stringify(pendingOrderPayload));

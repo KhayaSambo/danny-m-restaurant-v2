@@ -141,10 +141,10 @@ const App: React.FC = () => {
     // Initial fetch
     loadOrderStatus();
 
-    // Set up polling interval every 15 seconds
+    // Poll every 8 seconds for responsive order tracking
     const intervalId = setInterval(() => {
       loadOrderStatus();
-    }, 15000);
+    }, 8000);
 
     return () => clearInterval(intervalId);
   }, [activeOrderId, loadOrderStatus]);
@@ -190,24 +190,18 @@ const App: React.FC = () => {
           setIsSubmitting(true);
           setOrderError(null);
 
-          // Submit order to Supabase orders table
-          const { error: dbError } = await supabase.from('orders').insert({
-            user_id: activeUser.id,
-            total: pending.total,
-            notes: pending.notes || null,
-            items: pending.supabaseItems
-          });
+          // Single write path: POST to CMS API which creates normalized order_items rows
+          // (removed redundant direct Supabase insert that was creating orphaned records)
+          const cmsPayload = {
+            ...pending.cmsPayload,
+            userId: activeUser.id,
+            source: 'Web',
+          };
 
-          if (dbError) {
-            console.error('Supabase DB Sync Error during reconciliation:', dbError);
-            throw new Error(dbError.message || 'Failed to sync order to Supabase database.');
-          }
-
-          // Post order to CMS / Turso database
           const res = await fetch(`${CMS_URL}/api/orders`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(pending.cmsPayload)
+            body: JSON.stringify(cmsPayload)
           });
 
           if (!res.ok) {
@@ -230,7 +224,7 @@ const App: React.FC = () => {
         } catch (err: unknown) {
           console.error('Order Settlement Error:', err);
           const errMsg = err instanceof Error ? err.message : String(err);
-          alert('Saved locally. Order settlement failed: ' + errMsg);
+          alert('Order settlement failed: ' + errMsg);
         } finally {
           setIsSubmitting(false);
           // Clean URL params to avoid re-triggering on reload
