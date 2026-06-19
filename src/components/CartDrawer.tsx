@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Utensils,
   Flame,
@@ -10,7 +10,8 @@ import {
   Check,
   AlertTriangle,
   ShoppingBag,
-  Clock
+  Clock,
+  X
 } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
 import { useOrderTrackerStore } from '../store/useOrderTrackerStore';
@@ -72,7 +73,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
   const totalCartPrice = useCartStore((state) => state.totalCartPrice());
   const { subtotal, vat: calculatedVat } = calculateVat(totalCartPrice);
 
-  const handleCloseCart = () => {
+  const handleCloseCart = useCallback(() => {
     setIsCartClosing(true);
     const closeMs = parseFloat(
       getComputedStyle(document.documentElement).getPropertyValue("--modal-close-dur")
@@ -81,7 +82,19 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
       setIsCartOpen(false);
       setIsCartClosing(false);
     }, closeMs);
-  };
+  }, [setIsCartOpen, setIsCartClosing]);
+
+  useEffect(() => {
+    if (!isCartOpen) return;
+
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        handleCloseCart();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isCartOpen, handleCloseCart]);
 
   const handleCheckoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,10 +220,20 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
   };
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/75 backdrop-blur-md transition-opacity duration-300 ${isCartOpen && !isCartClosing ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-      <div className={`relative bg-bg-card/98 border border-white/10 rounded-[2.5rem] w-full max-w-5xl h-[85vh] md:h-[80vh] flex flex-col justify-between shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl t-modal ${isCartOpen && !isCartClosing ? 'is-open' : ''} ${isCartClosing ? 'is-closing' : ''} overflow-hidden`}>
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/75 backdrop-blur-md transition-opacity duration-300 ${isCartOpen && !isCartClosing ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+      onClick={handleCloseCart}
+    >
+      <div
+        className={`relative bg-bg-card/98 border border-white/10 rounded-[2.5rem] w-full max-w-5xl h-[85vh] md:h-[80vh] flex flex-col justify-between shadow-[0_0_80px_rgba(0,0,0,0.95)] backdrop-blur-2xl t-modal ${isCartOpen && !isCartClosing ? 'is-open' : ''} ${isCartClosing ? 'is-closing' : ''} overflow-hidden`}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cart-title"
+      >
         {/* Header */}
         <div className="p-6 border-b border-white/5 flex justify-between items-center bg-bg-dark/30">
+          <h2 id="cart-title" className="sr-only">{t('cart.title')}</h2>
           {activeOrderId ? (
             <div className="flex bg-[#0d0b0a] p-1 rounded-xl border border-white/5 shadow-inner">
               <button
@@ -251,7 +274,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
             className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
             aria-label="Close cart"
           >
-            ✕
+            <X className="w-5 h-5" />
           </button>
         </div>
 
