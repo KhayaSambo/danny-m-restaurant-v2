@@ -261,8 +261,12 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div
         className={`md:hidden fixed inset-0 bg-bg-dark/80 backdrop-blur-2xl transition-all duration-500 z-40 ${isMobileMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'
           }`}
+        onClick={() => setIsMobileMenuOpen(false)}
       >
-        <div className="flex flex-col pt-24 pb-8 px-8 gap-6 h-full overflow-y-auto">
+        <div
+          className="flex flex-col pt-24 pb-8 px-8 gap-6 h-full overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="flex justify-between items-center pb-4 border-b border-white/5">
             <span className="text-[10px] font-black tracking-widest text-white/40 uppercase">Menu</span>
             <LanguageSelector />
