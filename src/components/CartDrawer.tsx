@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Utensils,
   Flame,
@@ -628,6 +628,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                               <button
                                 onClick={() => decrementItem(targetObj)}
                                 className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/5 cursor-pointer"
+                                aria-label="Decrease quantity"
                               >
                                 −
                               </button>
@@ -635,6 +636,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                               <button
                                 onClick={() => incrementItem(targetObj)}
                                 className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/5 cursor-pointer"
+                                aria-label="Increase quantity"
                               >
                                 +
                               </button>
@@ -893,6 +895,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                                 <button
                                   onClick={() => decrementItem(targetObj)}
                                   className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/5 cursor-pointer"
+                                  aria-label="Decrease quantity"
                                 >
                                   −
                                 </button>
@@ -900,6 +903,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ user, setIsAuthModalOpen
                                 <button
                                   onClick={() => incrementItem(targetObj)}
                                   className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white/80 hover:bg-white/5 cursor-pointer"
+                                  aria-label="Increase quantity"
                                 >
                                   +
                                 </button>
